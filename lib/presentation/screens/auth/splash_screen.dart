@@ -1,3 +1,4 @@
+import 'package:avisai4/services/user_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
@@ -46,6 +47,19 @@ class _SplashScreenState extends State<SplashScreen>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  void verificarLoginAutomatico() async {
+    final usuario = await UserLocalStorage.obterDadosLoginAutomatico();
+
+    if (usuario != null) {
+      // O usuário já estava autenticado localmente
+      // Atualizar o estado do AuthBloc
+      context.read<AuthBloc>().add(LoginAutomaticoSolicitado(usuario: usuario));
+    } else {
+      // Nenhum usuário autenticado, mostrar tela de login
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
   }
 
   @override

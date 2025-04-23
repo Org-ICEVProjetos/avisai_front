@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:avisai4/bloc/auth/auth_bloc.dart';
 import 'package:avisai4/services/location_service.dart';
+import 'package:avisai4/services/user_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -92,19 +94,36 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
     }
   }
 
-  void _atualizarMarcadores() {
+  // Em algum método ou função da sua classe
+  Future<String?> obterIdUsuarioLogado() async {
+    final usuario = await UserLocalStorage.obterUsuario();
+    if (usuario != null) {
+      return usuario.id;
+    }
+    return null;
+  }
+
+  void _atualizarMarcadores() async {
     if (context.mounted) {
       final state = context.read<RegistroBloc>().state;
 
       if (state is RegistroCarregado) {
-        // Filtrar registros por categoria, se um filtro estiver selecionado
-        final registros =
-            _filtroCategoria != null
-                ? state.registros
-                    .where((r) => r.categoria == _filtroCategoria)
-                    .toList()
-                : state.registros;
+        // Obter ID do usuário logado
+        final usuario = await UserLocalStorage.obterUsuario();
+        final usuarioId = usuario?.id;
 
+        // Filtrar registros por categoria e/ou usuário
+        List<Registro> registros = state.registros;
+
+        // Filtrar por categoria se filtro estiver ativo
+        if (_filtroCategoria != null) {
+          registros =
+              registros.where((r) => r.categoria == _filtroCategoria).toList();
+        }
+
+        if (usuarioId != null) {
+          registros = registros.where((r) => r.usuarioId == usuarioId).toList();
+        }
         setState(() {
           _markers =
               registros.map((registro) {
@@ -206,12 +225,12 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
           if (state is RegistroCarregado) {
             _atualizarMarcadores();
           } else if (state is RegistroErro) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.mensagem),
-                backgroundColor: Colors.red,
-              ),
-            );
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   SnackBar(
+            //     content: Text(state.mensagem),
+            //     backgroundColor: Colors.red,
+            //   ),
+            // );
           }
         },
         builder: (context, state) {

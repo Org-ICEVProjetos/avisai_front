@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:avisai4/data/models/registro.dart';
 import 'package:flutter/material.dart';
 
 import 'validation_badge.dart';
@@ -9,7 +10,7 @@ class RegistroCard extends StatelessWidget {
   final String endereco;
   final String data;
   final String imagemUrl;
-  final bool validado;
+  final StatusValidacao status; // Modificado de bool para StatusValidacao
   final bool sincronizado;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
@@ -20,7 +21,7 @@ class RegistroCard extends StatelessWidget {
     required this.endereco,
     required this.data,
     required this.imagemUrl,
-    this.validado = false,
+    this.status = StatusValidacao.naoValidado, // Valor padrão modificado
     this.sincronizado = true,
     this.onTap,
     this.onDelete,
@@ -30,9 +31,7 @@ class RegistroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       elevation: 3.0,
       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: InkWell(
@@ -69,12 +68,14 @@ class RegistroCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        ValidationBadge(validated: validado),
+                        ValidationBadge(status: status),
                         if (!sincronizado) ...[
                           const SizedBox(height: 4.0),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8.0, vertical: 4.0),
+                              horizontal: 8.0,
+                              vertical: 4.0,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.blue,
                               borderRadius: BorderRadius.circular(16.0),

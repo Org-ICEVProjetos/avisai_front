@@ -136,7 +136,6 @@ class RegistroErro extends RegistroState {
 
 class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   final RegistroRepository _registroRepository;
-  final LocationService _locationService;
   final ConnectivityService _connectivityService;
   StreamSubscription? _conectividadeSubscription;
 
@@ -145,11 +144,9 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
     required LocationService locationService,
     required ConnectivityService connectivityService,
   }) : _registroRepository = registroRepository,
-       _locationService = locationService,
        _connectivityService = connectivityService,
        super(RegistroCarregando()) {
     on<CarregarRegistros>(_onCarregarRegistros);
-    on<CriarNovoRegistro>(_onCriarNovoRegistro);
     on<VerificarEValidarRegistrosProximos>(
       _onVerificarEValidarRegistrosProximos,
     );
@@ -179,74 +176,6 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
       );
     } catch (e) {
       emit(RegistroErro(mensagem: 'Erro ao carregar registros: $e'));
-    }
-  }
-
-  Future<void> _onCriarNovoRegistro(
-    CriarNovoRegistro event,
-    Emitter<RegistroState> emit,
-  ) async {
-    emit(RegistroCarregando());
-    try {
-      final posicaoAtual = await _locationService.getCurrentLocation();
-
-      // Tente criar o registro, mesmo que a API não esteja disponível
-      final registro = await _registroRepository.criarRegistro(
-        usuarioId: event.usuarioId,
-        usuarioNome: event.usuarioNome,
-        categoria: event.categoria,
-        caminhoFotoTemporario: event.caminhoFotoTemporario,
-        latitudeAtual: posicaoAtual.latitude,
-        longitudeAtual: posicaoAtual.longitude,
-      );
-
-      // Tente validar registros próximos
-      try {
-        await _registroRepository.verificarEValidarRegistrosProximos(
-          categoria: event.categoria,
-          latitude: posicaoAtual.latitude,
-          longitude: posicaoAtual.longitude,
-          validadorUsuarioId: event.usuarioId,
-        );
-      } catch (e) {
-        // Ignore erros aqui, pois a validação não é crítica
-        print('Erro ao validar registros próximos (ignorado): $e');
-      }
-
-      // Emitir mensagem de sucesso
-      emit(RegistroOperacaoSucesso(mensagem: 'Registro criado com sucesso!'));
-
-      // Carregar registros atualizados
-      final registros = await _registroRepository.obterTodosRegistros();
-      emit(
-        RegistroCarregado(
-          registros: registros,
-          estaOnline: _connectivityService.isOnline,
-        ),
-      );
-    } catch (e) {
-      print('Erro ao criar registro: $e');
-      // Para erros de API, ainda emite estado de erro mas com uma mensagem explicando
-      // que o registro foi salvo localmente
-      emit(
-        RegistroErro(
-          mensagem: 'Erro ao sincronizar com a API. Registro salvo localmente.',
-        ),
-      );
-
-      // Depois tenta recarregar os registros locais para atualizar a UI
-      try {
-        final registros = await _registroRepository.obterTodosRegistros();
-        emit(
-          RegistroCarregado(
-            registros: registros,
-            estaOnline: _connectivityService.isOnline,
-          ),
-        );
-      } catch (e2) {
-        // Ignora erros aqui para garantir que a UI não quebre
-        print('Erro ao recarregar registros após falha: $e2');
-      }
     }
   }
 

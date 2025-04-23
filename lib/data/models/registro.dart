@@ -1,4 +1,4 @@
-enum StatusValidacao { validado, naoValidado, pendente }
+enum StatusValidacao { validado, naoValidado, pendente, emExecucao, resolvido }
 
 enum CategoriaIrregularidade { buraco, posteDefeituoso, lixoIrregular }
 

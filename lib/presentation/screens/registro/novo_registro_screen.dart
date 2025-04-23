@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../bloc/registro/registro_bloc.dart';
 import '../../../data/models/registro.dart';
@@ -150,9 +151,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       // Capturar a localização atual
       final position = await Geolocator.getCurrentPosition(
         locationSettings: AndroidSettings(
-          forceLocationManager: true,
           accuracy: LocationAccuracy.best,
-        ), // útil para forçar GPS mesmo offline
+          forceLocationManager: true,
+        ),
       );
 
       // Capturar a foto
@@ -160,8 +161,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
 
       setState(() {
         _imagemCapturada = File(arquivo.path);
-        _localizacaoCaptura =
-            position; // Salva a localização ao capturar a foto
+        _localizacaoCaptura = position;
         _tirouFoto = true;
         _inicializando = false;
       });
@@ -507,7 +507,22 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       width: double.infinity,
       child:
           _imagemCapturada != null
-              ? Image.file(_imagemCapturada!, fit: BoxFit.contain)
+              ? FadeInImage(
+                placeholder: AssetImage('assets/images/placeholder.png'),
+                image: FileImage(_imagemCapturada!),
+                fit: BoxFit.contain,
+                imageErrorBuilder: (context, error, stackTrace) {
+                  print('Erro ao carregar imagem: $error');
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.broken_image, size: 64, color: Colors.red),
+                      SizedBox(height: 16),
+                      Text('Erro ao carregar imagem: $error'),
+                    ],
+                  );
+                },
+              )
               : const Center(child: Text('Nenhuma imagem capturada')),
     );
   }

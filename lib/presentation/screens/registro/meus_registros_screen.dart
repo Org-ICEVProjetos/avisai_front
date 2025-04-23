@@ -52,12 +52,12 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
             ),
           );
         } else if (state is RegistroOperacaoSucesso) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.mensagem),
-              backgroundColor: Colors.green,
-            ),
-          );
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   SnackBar(
+          //     content: Text(state.mensagem),
+          //     backgroundColor: Colors.green,
+          //   ),
+          // );
         }
       },
       builder: (context, state) {
@@ -110,7 +110,7 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                   endereco: registro.endereco ?? 'Endereço não disponível',
                   data: _formatarData(registro.dataHora),
                   imagemUrl: registro.caminhoFoto,
-                  validado: registro.status == StatusValidacao.validado,
+                  status: registro.status,
                   sincronizado: registro.sincronizado,
                   onTap: () {
                     Navigator.of(context).push(

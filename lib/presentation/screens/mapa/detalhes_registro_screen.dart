@@ -39,6 +39,10 @@ class DetalheRegistroScreen extends StatelessWidget {
         return 'Não validado';
       case StatusValidacao.pendente:
         return 'Pendente de validação';
+      case StatusValidacao.resolvido:
+        return "Resolvido";
+      case StatusValidacao.emExecucao:
+        return "Em execução";
     }
   }
 
@@ -50,6 +54,10 @@ class DetalheRegistroScreen extends StatelessWidget {
         return Colors.orange;
       case StatusValidacao.pendente:
         return Colors.blue;
+      case StatusValidacao.resolvido:
+        return Colors.green;
+      case StatusValidacao.emExecucao:
+        return Colors.deepOrange;
     }
   }
 
@@ -137,13 +145,13 @@ class DetalheRegistroScreen extends StatelessWidget {
       body: BlocListener<RegistroBloc, RegistroState>(
         listener: (context, state) {
           if (state is RegistroOperacaoSucesso) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.mensagem),
-                backgroundColor: Colors.green,
-                duration: const Duration(seconds: 2),
-              ),
-            );
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   SnackBar(
+            //     content: Text(state.mensagem),
+            //     backgroundColor: Colors.green,
+            //     duration: const Duration(seconds: 2),
+            //   ),
+            // );
 
             // Se a operação for sucesso e estiver relacionada a uma remoção,
             // voltar para a tela anterior
@@ -151,12 +159,12 @@ class DetalheRegistroScreen extends StatelessWidget {
               Navigator.of(context).pop();
             }
           } else if (state is RegistroErro) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.mensagem),
-                backgroundColor: Colors.red,
-              ),
-            );
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   SnackBar(
+            //     content: Text(state.mensagem),
+            //     backgroundColor: Colors.red,
+            //   ),
+            // );
           }
         },
         child: SingleChildScrollView(
@@ -213,10 +221,7 @@ class DetalheRegistroScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            ValidationBadge(
-                              validated:
-                                  registro.status == StatusValidacao.validado,
-                            ),
+                            ValidationBadge(status: registro.status),
                             if (!registro.sincronizado) ...[
                               const SizedBox(height: 8),
                               Container(

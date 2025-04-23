@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:avisai4/services/user_storage.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../data/models/usuario.dart';
@@ -59,6 +61,15 @@ abstract class AuthState extends Equatable {
   List<Object> get props => [];
 }
 
+class LoginAutomaticoSolicitado extends AuthEvent {
+  final Usuario usuario;
+
+  const LoginAutomaticoSolicitado({required this.usuario});
+
+  @override
+  List<Object> get props => [usuario];
+}
+
 class NaoAutenticado extends AuthState {}
 
 class Carregando extends AuthState {}
@@ -94,6 +105,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<RegistroSolicitado>(_onRegistroSolicitado);
     on<RecuperacaoSenhaSolicitada>(_onRecuperacaoSenhaSolicitada);
     on<LogoutSolicitado>(_onLogoutSolicitado);
+    on<LoginAutomaticoSolicitado>(_onLoginAutomaticoSolicitado);
   }
 
   Future<void> _onVerificarAutenticacao(
@@ -110,6 +122,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       emit(NaoAutenticado());
+    }
+  }
+
+  Future<void> _onLoginAutomaticoSolicitado(
+    LoginAutomaticoSolicitado event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(Carregando());
+
+    try {
+      // Aqui você pode opcionalmente validar com a API se o token/sessão ainda é válido
+      // Se não houver API, simplesmente emita o estado autenticado com o usuário
+      emit(Autenticado(event.usuario));
+    } catch (e) {
+      // Em caso de erro, como token expirado, emitir não autenticado
+      emit(NaoAutenticado());
+      // E remover os dados locais
+      await UserLocalStorage.removerUsuario();
     }
   }
 
@@ -130,6 +160,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       //   event.cpf,
       //   event.senha,
       // );
+      await UserLocalStorage.salvarUsuario(usuario);
       emit(Autenticado(usuario));
     } catch (e) {
       emit(AuthErro(e.toString()));
@@ -174,9 +205,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(Carregando());
     try {
       await _authRepository.logout();
+      await UserLocalStorage.removerUsuario();
       emit(NaoAutenticado());
     } catch (e) {
       emit(AuthErro(e.toString()));
     }
+  }
+
+  // Método utilitário que pode ser usado em qualquer parte do app
+  Usuario? getUsuarioAtual(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is Autenticado) {
+      return authState.usuario;
+    }
+    return null;
   }
 }
