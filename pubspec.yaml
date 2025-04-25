@@ -44,3 +44,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - 'assets/images/onboarding_city.png'
+    - 'assets/images/onboarding_report.png'
+    - 'assets/images/onboarding_welcome.png'

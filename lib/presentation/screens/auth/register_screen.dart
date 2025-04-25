@@ -42,13 +42,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       context.read<AuthBloc>().add(
-            RegistroSolicitado(
-              nome: _nomeController.text,
-              cpf: _cpfController.text,
-              email: _emailController.text,
-              senha: _senhaController.text,
-            ),
-          );
+        RegistroSolicitado(
+          nome: _nomeController.text,
+          cpf: _cpfController.text,
+          email: _emailController.text,
+          senha: _senhaController.text,
+        ),
+      );
     }
   }
 
@@ -120,9 +120,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Criar Conta'),
-      ),
+      appBar: AppBar(title: const Text('Criar Conta')),
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthErro) {
@@ -139,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           } else if (state is Autenticado) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => const HomeScreen(),
+                builder: (context) => const HomeScreen(index: 1),
               ),
             );
           }
@@ -168,10 +166,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Text(
                         'Preencha os campos abaixo para se cadastrar',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 32),
 
@@ -270,12 +265,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             // Botão de cadastro
                             _carregando
                                 ? const Center(
-                                    child: CircularProgressIndicator())
+                                  child: CircularProgressIndicator(),
+                                )
                                 : CustomButton(
-                                    texto: 'Cadastrar',
-                                    onPressed: _registrar,
-                                    icone: Icons.app_registration,
-                                  ),
+                                  texto: 'Cadastrar',
+                                  onPressed: _registrar,
+                                  icone: Icons.app_registration,
+                                ),
                             const SizedBox(height: 24),
 
                             // Voltar para login

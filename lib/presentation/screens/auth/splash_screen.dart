@@ -84,7 +84,9 @@ class _SplashScreenState extends State<SplashScreen>
         listener: (context, state) {
           if (state is Autenticado) {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
+              MaterialPageRoute(
+                builder: (context) => const HomeScreen(index: 1),
+              ),
             );
           } else if (state is NaoAutenticado) {
             Navigator.of(context).pushReplacement(

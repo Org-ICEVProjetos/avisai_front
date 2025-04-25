@@ -154,10 +154,51 @@ class DetalheRegistroScreen extends StatelessWidget {
     );
   }
 
+  void _expandirImagem(BuildContext context, String base64Foto) {
+    if (base64Foto.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            insetPadding: const EdgeInsets.all(12),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Botão fechar
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+
+                  // Imagem expandida com zoom
+                  Flexible(
+                    child: InteractiveViewer(
+                      minScale: 0.5,
+                      maxScale: 4.0,
+                      child: Image.memory(
+                        base64Decode(base64Foto),
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+
+                  // Espaço na parte inferior
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bool imagemExiste = File(registro.base64Foto).existsSync();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalhes da Irregularidade'),
@@ -175,26 +216,11 @@ class DetalheRegistroScreen extends StatelessWidget {
       body: BlocListener<RegistroBloc, RegistroState>(
         listener: (context, state) {
           if (state is RegistroOperacaoSucesso) {
-            // ScaffoldMessenger.of(context).showSnackBar(
-            //   SnackBar(
-            //     content: Text(state.mensagem),
-            //     backgroundColor: Colors.green,
-            //     duration: const Duration(seconds: 2),
-            //   ),
-            // );
-
             // Se a operação for sucesso e estiver relacionada a uma remoção,
             // voltar para a tela anterior
             if (state.mensagem.contains('removido')) {
               Navigator.of(context).pop();
             }
-          } else if (state is RegistroErro) {
-            // ScaffoldMessenger.of(context).showSnackBar(
-            //   SnackBar(
-            //     content: Text(state.mensagem),
-            //     backgroundColor: Colors.red,
-            //   ),
-            // );
           }
         },
         child: SingleChildScrollView(
@@ -234,27 +260,27 @@ class DetalheRegistroScreen extends StatelessWidget {
                               const SizedBox(height: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                                  horizontal: 8.0,
+                                  vertical: 4.0,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue,
-                                  borderRadius: BorderRadius.circular(16),
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(16.0),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      Icons.sync,
-                                      size: 16,
+                                      Icons.wifi_off,
                                       color: Colors.white,
+                                      size: 16.0,
                                     ),
-                                    SizedBox(width: 4),
+                                    SizedBox(width: 4.0),
                                     Text(
-                                      'Pendente',
+                                      'Não sincronizado',
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 12,
+                                        fontSize: 12.0,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -265,6 +291,31 @@ class DetalheRegistroScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+
+                      // Botão de expandir imagem
+                      if (registro.base64Foto.isNotEmpty)
+                        Positioned(
+                          bottom: 12,
+                          right: 12,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.zoom_out_map,
+                                color: Colors.white,
+                              ),
+                              onPressed:
+                                  () => _expandirImagem(
+                                    context,
+                                    registro.base64Foto,
+                                  ),
+                              tooltip: 'Expandir imagem',
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),

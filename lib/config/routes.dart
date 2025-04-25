@@ -14,7 +14,7 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/login': (context) => const LoginScreen(),
   '/register': (context) => const RegisterScreen(),
   '/forgot-password': (context) => const ForgotPasswordScreen(),
-  '/home': (context) => const HomeScreen(),
+  '/home': (context) => const HomeScreen(index: 1),
   '/registro/novo': (context) {
     final args =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;

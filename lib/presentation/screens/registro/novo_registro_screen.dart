@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:avisai4/presentation/screens/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
@@ -188,13 +189,30 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         imageQuality: 70, // Reduzir qualidade para economizar memória
       );
 
+      setState(() {
+        _inicializando = true;
+      });
+
+      // Capturar a localização atual
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: AndroidSettings(
+          accuracy: LocationAccuracy.best,
+          forceLocationManager: true,
+        ),
+      );
+
       if (arquivo != null) {
         setState(() {
           _imagemCapturada = File(arquivo.path);
           _tirouFoto = true;
+          _localizacaoCaptura = position;
+          _inicializando = false;
         });
       }
     } catch (e) {
+      setState(() {
+        _inicializando = false;
+      });
       print('Erro ao selecionar da galeria: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -267,7 +285,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
 
       // Navegue para a tela principal
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomeScreen(index: 0)),
+        );
       }
     } catch (e) {
       print("Erro durante o envio do registro: $e");

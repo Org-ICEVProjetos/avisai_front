@@ -1,11 +1,13 @@
+import 'package:avisai4/presentation/screens/home/onboarding_screen.dart';
+import 'package:avisai4/presentation/screens/widgets/tutorial_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_input.dart';
+import '../home/home_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
-import '../home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -82,9 +84,8 @@ class _LoginScreenState extends State<LoginScreen> {
               _carregando = false;
             });
           } else if (state is Autenticado) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
-            );
+            // Verificar se deve mostrar o tutorial ou ir direto para a Home
+            _verificarETrocarParaTutorial();
           }
         },
         builder: (context, state) {
@@ -222,6 +223,15 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         },
       ),
+    );
+  }
+
+  // Método para verificar se o tutorial deve ser mostrado e redirecionar
+  Future<void> _verificarETrocarParaTutorial() async {
+    await TutorialManager.verificarENavegar(
+      context,
+      const OnboardingScreen(),
+      const HomeScreen(index: 1),
     );
   }
 }
