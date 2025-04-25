@@ -147,9 +147,6 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
        _connectivityService = connectivityService,
        super(RegistroCarregando()) {
     on<CarregarRegistros>(_onCarregarRegistros);
-    on<VerificarEValidarRegistrosProximos>(
-      _onVerificarEValidarRegistrosProximos,
-    );
     on<SincronizarRegistrosPendentes>(_onSincronizarRegistrosPendentes);
     on<RemoverRegistro>(_onRemoverRegistro);
     on<ConexaoAlterada>(_onConexaoAlterada);
@@ -176,44 +173,6 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
       );
     } catch (e) {
       emit(RegistroErro(mensagem: 'Erro ao carregar registros: $e'));
-    }
-  }
-
-  Future<void> _onVerificarEValidarRegistrosProximos(
-    VerificarEValidarRegistrosProximos event,
-    Emitter<RegistroState> emit,
-  ) async {
-    emit(RegistroCarregando());
-    try {
-      final resultado = await _registroRepository
-          .verificarEValidarRegistrosProximos(
-            categoria: event.categoria,
-            latitude: event.latitude,
-            longitude: event.longitude,
-            validadorUsuarioId: event.validadorUsuarioId,
-          );
-
-      if (resultado) {
-        emit(
-          RegistroOperacaoSucesso(mensagem: 'Registro validado com sucesso!'),
-        );
-      } else {
-        emit(
-          RegistroOperacaoSucesso(
-            mensagem: 'Não há registros próximos para validar.',
-          ),
-        );
-      }
-
-      final registros = await _registroRepository.obterTodosRegistros();
-      emit(
-        RegistroCarregado(
-          registros: registros,
-          estaOnline: _connectivityService.isOnline,
-        ),
-      );
-    } catch (e) {
-      emit(RegistroErro(mensagem: 'Erro ao validar registros: $e'));
     }
   }
 

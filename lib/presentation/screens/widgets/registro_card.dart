@@ -77,20 +77,20 @@ class RegistroCard extends StatelessWidget {
                               vertical: 4.0,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.blue,
+                              color: Colors.red,
                               borderRadius: BorderRadius.circular(16.0),
                             ),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  Icons.sync,
+                                  Icons.wifi_off,
                                   color: Colors.white,
                                   size: 16.0,
                                 ),
                                 SizedBox(width: 4.0),
                                 Text(
-                                  'Pendente',
+                                  'Não sincronizado',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 12.0,

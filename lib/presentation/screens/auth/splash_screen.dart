@@ -1,3 +1,4 @@
+import 'package:avisai4/data/models/usuario.dart';
 import 'package:avisai4/services/user_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,31 +36,44 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController.forward();
 
-    // Verificar autenticação após delay
+    // Usar um Future.delayed é mais seguro que Timer quando se trata de verificar o mounted
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        // Não usamos context.mounted, apenas checked o mounted da classe State
+        verificarLoginAutomatico();
+      }
+    });
+  }
 
-    if (context.mounted) {
-      context.read<AuthBloc>().add(VerificarAutenticacao());
+  void verificarLoginAutomatico() async {
+    if (!mounted) return; // Verificação de segurança adicional
+
+    try {
+      final dadosLogin = await UserLocalStorage.obterDadosLoginAutomatico();
+
+      // Sempre verificar mounted antes de usar context
+      if (!mounted) return;
+
+      if (dadosLogin != null) {
+        final usuario = dadosLogin['usuario'] as Usuario;
+        context.read<AuthBloc>().add(
+          LoginAutomaticoSolicitado(usuario: usuario),
+        );
+      } else {
+        context.read<AuthBloc>().add(VerificarAutenticacao(fromSplash: true));
+      }
+    } catch (e) {
+      print('Erro no login automático: $e');
+      if (mounted) {
+        context.read<AuthBloc>().add(VerificarAutenticacao(fromSplash: true));
+      }
     }
-    ;
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
-  }
-
-  void verificarLoginAutomatico() async {
-    final usuario = await UserLocalStorage.obterDadosLoginAutomatico();
-
-    if (usuario != null) {
-      // O usuário já estava autenticado localmente
-      // Atualizar o estado do AuthBloc
-      context.read<AuthBloc>().add(LoginAutomaticoSolicitado(usuario: usuario));
-    } else {
-      // Nenhum usuário autenticado, mostrar tela de login
-      Navigator.of(context).pushReplacementNamed('/login');
-    }
   }
 
   @override

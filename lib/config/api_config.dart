@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'https://api.cidadaovigilante.com.br/v1';
+  static const String baseUrl = 'https://api.avisai.com.br/v1';
 
   static const String googleMapsApiKey =
       'AIzaSyDCyRqiRsOnocT0tfPHWZzSVZsA3VjGZps';

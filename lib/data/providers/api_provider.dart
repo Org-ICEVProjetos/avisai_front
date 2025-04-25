@@ -19,7 +19,12 @@ class ApiProvider {
   final String baseUrl = ApiConfig.baseUrl;
   final Map<String, String> headers = {'Content-Type': 'application/json'};
 
-  Future<Usuario> login(String cpf, String senha) async {
+  // Método para configurar o token
+  void configurarToken(String token) {
+    headers['Authorization'] = 'Bearer $token';
+  }
+
+  Future<Map<String, dynamic>> login(String cpf, String senha) async {
     final url = Uri.parse('$baseUrl/auth/login');
 
     try {
@@ -31,11 +36,12 @@ class ApiProvider {
 
       if (response.statusCode == 200) {
         final dados = jsonDecode(response.body);
-
         final token = dados['token'];
-        headers['Authorization'] = 'Bearer $token';
 
-        return Usuario.fromJson(dados['usuario']);
+        // Configurar o token para as próximas requisições
+        configurarToken(token);
+
+        return {'usuario': Usuario.fromJson(dados['usuario']), 'token': token};
       } else {
         final erro = jsonDecode(response.body);
         throw ApiException(
@@ -49,7 +55,10 @@ class ApiProvider {
     }
   }
 
-  Future<Usuario> registrarUsuario(Usuario usuario, String senha) async {
+  Future<Map<String, dynamic>> registrarUsuario(
+    Usuario usuario,
+    String senha,
+  ) async {
     final url = Uri.parse('$baseUrl/auth/registrar');
 
     try {
@@ -66,11 +75,12 @@ class ApiProvider {
 
       if (response.statusCode == 201) {
         final dados = jsonDecode(response.body);
-
         final token = dados['token'];
-        headers['Authorization'] = 'Bearer $token';
 
-        return Usuario.fromJson(dados['usuario']);
+        // Configurar o token para as próximas requisições
+        configurarToken(token);
+
+        return {'usuario': Usuario.fromJson(dados['usuario']), 'token': token};
       } else {
         final erro = jsonDecode(response.body);
         throw ApiException(
@@ -235,78 +245,5 @@ class ApiProvider {
       if (e is ApiException) rethrow;
       throw ApiException('Erro de conexão: ${e.toString()}');
     }
-  }
-}
-
-class MockApiProvider extends ApiProvider {
-  final Map<String, Usuario> _usuarios = {};
-  final List<Registro> _registros = [];
-  String? _tokenAutenticado;
-
-  @override
-  Future<Usuario> login(String cpf, String senha) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (_usuarios.containsKey(cpf) && _usuarios[cpf]!.senha == senha) {
-      _tokenAutenticado =
-          'token-simulado-${DateTime.now().millisecondsSinceEpoch}';
-      headers['Authorization'] = 'Bearer $_tokenAutenticado';
-      return _usuarios[cpf]!;
-    } else {
-      throw ApiException('CPF ou senha inválidos', statusCode: 401);
-    }
-  }
-
-  @override
-  Future<Usuario> registrarUsuario(Usuario usuario, String senha) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (_usuarios.containsKey(usuario.cpf)) {
-      throw ApiException('Usuário já cadastrado', statusCode: 409);
-    }
-
-    final novoUsuario = Usuario(
-      id: 'user-${DateTime.now().millisecondsSinceEpoch}',
-      nome: usuario.nome,
-      cpf: usuario.cpf,
-      email: usuario.email,
-      senha: senha,
-    );
-
-    _usuarios[novoUsuario.cpf] = novoUsuario;
-    _tokenAutenticado =
-        'token-simulado-${DateTime.now().millisecondsSinceEpoch}';
-    headers['Authorization'] = 'Bearer $_tokenAutenticado';
-
-    return novoUsuario;
-  }
-
-  @override
-  Future<Registro> enviarRegistro(Registro registro) async {
-    await Future.delayed(const Duration(milliseconds: 1000));
-
-    if (_tokenAutenticado == null) {
-      throw ApiException('Não autenticado', statusCode: 401);
-    }
-
-    final novoRegistro = registro.copyWith(
-      id: 'reg-${DateTime.now().millisecondsSinceEpoch}',
-      sincronizado: true,
-    );
-
-    _registros.add(novoRegistro);
-
-    return novoRegistro;
-  }
-
-  @override
-  Future<List<Registro>> obterRegistros() async {
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    if (_tokenAutenticado == null) {
-      throw ApiException('Não autenticado', statusCode: 401);
-    }
-
-    return List.from(_registros);
   }
 }

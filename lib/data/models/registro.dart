@@ -144,6 +144,10 @@ class Registro {
         return StatusValidacao.naoValidado;
       case 'StatusValidacao.pendente':
         return StatusValidacao.pendente;
+      case 'StatusValidacao.emExecucao':
+        return StatusValidacao.emExecucao;
+      case 'StatusValidacao.resolvido':
+        return StatusValidacao.resolvido;
       default:
         return StatusValidacao.pendente;
     }

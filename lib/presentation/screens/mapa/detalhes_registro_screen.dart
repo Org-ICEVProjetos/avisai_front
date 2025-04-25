@@ -490,37 +490,6 @@ class DetalheRegistroScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Botão de validação (se aplicável)
-                    if (registro.status == StatusValidacao.pendente)
-                      BlocBuilder<RegistroBloc, RegistroState>(
-                        builder: (context, state) {
-                          final bool podeValidar =
-                              state is RegistroCarregado && state.estaOnline;
-
-                          return CustomButton(
-                            texto: 'Validar Registro',
-                            icone: Icons.check_circle,
-                            cor: Colors.green,
-                            onPressed:
-                                podeValidar
-                                    ? () {
-                                      context.read<RegistroBloc>().add(
-                                        VerificarEValidarRegistrosProximos(
-                                          categoria: registro.categoria,
-                                          validadorUsuarioId:
-                                              registro.usuarioId ?? '',
-                                          latitude: registro.latitude,
-                                          longitude: registro.longitude,
-                                        ),
-                                      );
-                                    }
-                                    : () {},
-                          );
-                        },
-                      ),
-
-                    const SizedBox(height: 16),
-
                     // Botão de remover
                     CustomButton(
                       texto: 'Remover Registro',

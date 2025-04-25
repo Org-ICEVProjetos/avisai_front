@@ -54,9 +54,50 @@ class RegistroRepository {
   // Sincroniza um registro com o servidor
   Future<bool> _sincronizarRegistro(Registro registro) async {
     try {
-      // Tenta enviar para a API
+      // Primeiro, verificar se é necessário atualizar os dados de endereço
+      String? endereco = registro.endereco;
+      String? rua = registro.rua;
+      String? bairro = registro.bairro;
+      String? cidade = registro.cidade;
 
-      // Atualiza o status de sincronização no banco local
+      // Se os dados de endereço estão indisponíveis e agora temos internet,
+      // vamos tentar obter o endereço usando as coordenadas salvas
+      if ((endereco == null || endereco == 'Não disponível') &&
+          _connectivityService.isOnline) {
+        try {
+          final dadosEndereco = await _locationService
+              .getAddressFromCoordinates(registro.latitude, registro.longitude);
+
+          endereco = dadosEndereco['endereco'];
+          rua = dadosEndereco['rua'];
+          bairro = dadosEndereco['bairro'];
+          cidade = dadosEndereco['cidade'];
+        } catch (e) {
+          print('Erro ao obter endereço atualizado: $e');
+          // Manter os valores originais em caso de erro
+        }
+      }
+
+      // Atualizar o registro com os novos dados de endereço, se disponíveis
+      final registroAtualizado = registro.copyWith(
+        endereco: endereco,
+        rua: rua,
+        bairro: bairro,
+        cidade: cidade,
+      );
+
+      // Salvar as atualizações localmente primeiro
+      if (endereco != registro.endereco ||
+          rua != registro.rua ||
+          bairro != registro.bairro ||
+          cidade != registro.cidade) {
+        await _localStorage.updateRegistro(registroAtualizado);
+      }
+
+      // Enviar para a API
+      await _apiProvider.enviarRegistro(registroAtualizado);
+
+      // Atualizar o status de sincronização no banco local
       await _localStorage.marcarRegistroComoSincronizado(registro.id!);
 
       return true;
@@ -95,46 +136,6 @@ class RegistroRepository {
     required double latitudeAtual,
     required double longitudeAtual,
   }) async {
-    // Extrair coordenadas da foto, se disponível
-    // No método criarRegistro do RegistroRepository
-    // Map<String, double>? metadados;
-    // try {
-    //   metadados = await _locationService.getCoordinatesFromImageMetadata(
-    //     caminhoFotoTemporario,
-    //   );
-    //   print('Coordenadas extraídas da foto: $metadados');
-    //   print('Coordenadas atuais: lat=$latitudeAtual, long=$longitudeAtual');
-    // } catch (e) {
-    //   print('Erro ao extrair metadados: $e');
-    //   metadados = null;
-    // }
-
-    // // Se não houver metadados ou se as coordenadas forem (0,0), considere como dentro do raio
-    // bool dentroDoRaio = true;
-
-    // if (metadados != null &&
-    //     metadados['latitude'] != null &&
-    //     metadados['longitude'] != null &&
-    //     (metadados['latitude'] != 0.0 || metadados['longitude'] != 0.0)) {
-    //   // Só calcule a distância se as coordenadas não forem (0,0)
-    //   final latitudeFoto = metadados['latitude']!;
-    //   final longitudeFoto = metadados['longitude']!;
-
-    //   final distancia = _locationService.calculateDistance(
-    //     latitudeAtual,
-    //     longitudeAtual,
-    //     latitudeFoto,
-    //     longitudeFoto,
-    //   );
-
-    //   print('Distância calculada: $distancia metros');
-    //   dentroDoRaio = distancia <= 10; // 10 metros
-    // } else {
-    //   print(
-    //     'Sem dados de geolocalização válidos na foto, considerando como dentro do raio',
-    //   );
-    // }
-
     // Obter endereço baseado na localização
     Map<String, String> dadosEndereco;
     try {
@@ -189,6 +190,7 @@ class RegistroRepository {
     if (_connectivityService.isOnline) {
       try {
         await _sincronizarRegistro(novoRegistro);
+        await _apiProvider.enviarRegistro(novoRegistro);
       } catch (e) {
         // Apenas logamos o erro, mas não lançamos para cima
         print('Erro ao sincronizar com a API (ignorado): $e');
@@ -199,52 +201,31 @@ class RegistroRepository {
     return novoRegistro;
   }
 
-  // Tenta encontrar e validar registros próximos
-  Future<bool> verificarEValidarRegistrosProximos({
-    required CategoriaIrregularidade categoria,
-    required double latitude,
-    required double longitude,
-    required String validadorUsuarioId,
-  }) async {
-    // Buscar registros próximos não validados da mesma categoria
-    final registrosProximos = await _localStorage.getRegistrosProximos(
-      latitude,
-      longitude,
-      10, // 10 metros
-      categoria,
-    );
-
-    // Filtrar apenas os registros que não foram validados
-    final registrosParaValidar =
-        registrosProximos
-            .where((r) => r.status == StatusValidacao.pendente)
-            .toList();
-
-    if (registrosParaValidar.isEmpty) {
-      return false;
-    }
-
-    // Validar o primeiro registro encontrado
-    final registroValidado = registrosParaValidar.first.copyWith(
-      status: StatusValidacao.validado,
-      validadoPorUsuarioId: validadorUsuarioId,
-      dataValidacao: DateTime.now(),
-    );
-
-    // Atualizar no banco local
-    await _localStorage.updateRegistro(registroValidado);
-
-    // Sincronizar com o servidor se estiver online
-    if (_connectivityService.isOnline) {
-      await _sincronizarRegistro(registroValidado);
-    }
-
-    return true;
-  }
-
-  // Obter todos os registros
   Future<List<Registro>> obterTodosRegistros() async {
-    return await _localStorage.getRegistros();
+    // Verificar se está online
+    if (_connectivityService.isOnline) {
+      try {
+        // Tentar buscar dados do servidor
+        final registrosServidor = await _apiProvider.obterRegistros();
+
+        // Atualizar banco local com dados do servidor
+        for (var registro in registrosServidor) {
+          await _localStorage.insertRegistro(
+            registro.copyWith(sincronizado: true),
+          );
+        }
+
+        // Retornar dados do banco local (que agora está atualizado com os dados do servidor)
+        return await _localStorage.getRegistros();
+      } catch (e) {
+        print('Erro ao buscar registros do servidor: $e');
+        // Em caso de erro na comunicação com o servidor, cair no fallback local
+        return await _localStorage.getRegistros();
+      }
+    } else {
+      // Se estiver offline, buscar apenas os dados locais
+      return await _localStorage.getRegistros();
+    }
   }
 
   // Obter registros do usuário

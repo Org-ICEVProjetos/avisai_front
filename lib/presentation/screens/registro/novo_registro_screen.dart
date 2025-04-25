@@ -72,7 +72,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     try {
       // Verificar permissões
       print('Verificando permissões da câmera...');
-      final statusCamera = await Permission.camera.request();
+      final statusCamera = await Permission.camera.status;
       print('Status da permissão de câmera: $statusCamera');
 
       if (statusCamera.isDenied) {
@@ -148,6 +148,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         _inicializando = true;
       });
 
+      // Capturar a foto
+      final arquivo = await _cameraController!.takePicture();
+
       // Capturar a localização atual
       final position = await Geolocator.getCurrentPosition(
         locationSettings: AndroidSettings(
@@ -155,9 +158,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
           forceLocationManager: true,
         ),
       );
-
-      // Capturar a foto
-      final arquivo = await _cameraController!.takePicture();
 
       setState(() {
         _imagemCapturada = File(arquivo.path);

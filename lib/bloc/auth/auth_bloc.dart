@@ -13,7 +13,14 @@ abstract class AuthEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class VerificarAutenticacao extends AuthEvent {}
+class VerificarAutenticacao extends AuthEvent {
+  final bool fromSplash;
+
+  const VerificarAutenticacao({this.fromSplash = false});
+
+  @override
+  List<Object> get props => [fromSplash];
+}
 
 class LoginSolicitado extends AuthEvent {
   final String cpf;
@@ -112,16 +119,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     VerificarAutenticacao event,
     Emitter<AuthState> emit,
   ) async {
-    emit(Carregando());
+    // Não emitir Carregando aqui para não acionar a transição na SplashScreen
+    // Apenas verificar silenciosamente
     try {
       final usuario = await _authRepository.checarAutenticacao();
       if (usuario != null) {
-        emit(Autenticado(usuario));
+        // Verificamos se o evento tem um flag para sinalizar que veio da SplashScreen
+        // Se for silencioso, não emitimos o estado Autenticado ainda
+        if (event.fromSplash) {
+          emit(Autenticado(usuario));
+        }
       } else {
-        emit(NaoAutenticado());
+        if (event.fromSplash) {
+          emit(NaoAutenticado());
+        }
       }
     } catch (e) {
-      emit(NaoAutenticado());
+      if (event.fromSplash) {
+        emit(NaoAutenticado());
+      }
     }
   }
 
@@ -132,13 +148,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(Carregando());
 
     try {
-      // Aqui você pode opcionalmente validar com a API se o token/sessão ainda é válido
-      // Se não houver API, simplesmente emita o estado autenticado com o usuário
+      // Já temos todos os dados necessários no evento
       emit(Autenticado(event.usuario));
     } catch (e) {
-      // Em caso de erro, como token expirado, emitir não autenticado
       emit(NaoAutenticado());
-      // E remover os dados locais
+      // Limpar dados locais em caso de erro
       await UserLocalStorage.removerUsuario();
     }
   }
@@ -149,18 +163,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(Carregando());
     try {
-      final usuario = Usuario(
-        id: "123",
-        nome: "lala",
-        cpf: "06513872308",
-        email: "",
-        senha: "senha123",
-      );
       // final usuario = await _authRepository.login(
       //   event.cpf,
       //   event.senha,
       // );
-      await UserLocalStorage.salvarUsuario(usuario);
+      final usuario = Usuario(
+        id: "123",
+        nome: "João",
+        cpf: "",
+        email: "",
+        senha: "",
+      );
       emit(Autenticado(usuario));
     } catch (e) {
       emit(AuthErro(e.toString()));
