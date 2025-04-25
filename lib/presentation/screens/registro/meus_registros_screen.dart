@@ -109,7 +109,7 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                   categoria: _getCategoriaTexto(registro.categoria),
                   endereco: registro.endereco ?? 'Endereço não disponível',
                   data: _formatarData(registro.dataHora),
-                  imagemUrl: registro.caminhoFoto,
+                  imagemUrl: registro.base64Foto,
                   status: registro.status,
                   sincronizado: registro.sincronizado,
                   onTap: () {

@@ -24,11 +24,7 @@ class LocalStorageService {
   Future<Database> _initDatabase() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
     String path = join(documentsDirectory.path, 'cidadao_vigilante.db');
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _onCreate,
-    );
+    return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -57,7 +53,7 @@ class LocalStorageService {
         rua TEXT,
         bairro TEXT,
         cidade TEXT,
-        caminhoFoto TEXT NOT NULL,
+        base64Foto TEXT NOT NULL,
         status TEXT NOT NULL,
         sincronizado INTEGER NOT NULL,
         validadoPorUsuarioId TEXT,
@@ -103,8 +99,9 @@ class LocalStorageService {
   }
 
   // Métodos para Registro
-  Future<List<Registro>> getRegistros(
-      {bool apenasNaoSincronizados = false}) async {
+  Future<List<Registro>> getRegistros({
+    bool apenasNaoSincronizados = false,
+  }) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'registros',
@@ -116,8 +113,12 @@ class LocalStorageService {
     });
   }
 
-  Future<List<Registro>> getRegistrosProximos(double latitude, double longitude,
-      double raioMetros, CategoriaIrregularidade categoria) async {
+  Future<List<Registro>> getRegistrosProximos(
+    double latitude,
+    double longitude,
+    double raioMetros,
+    CategoriaIrregularidade categoria,
+  ) async {
     // Dada a complexidade de calcular distâncias em SQL para SQLite,
     // vamos buscar todos os registros da categoria e filtrar em memória
     final db = await database;
@@ -136,7 +137,11 @@ class LocalStorageService {
     final locationService = LocationService();
     return registros.where((registro) {
       final distancia = locationService.calculateDistance(
-          latitude, longitude, registro.latitude, registro.longitude);
+        latitude,
+        longitude,
+        registro.latitude,
+        registro.longitude,
+      );
       return distancia <= raioMetros;
     }).toList();
   }
@@ -187,10 +192,6 @@ class LocalStorageService {
 
   Future<void> deleteRegistro(String id) async {
     final db = await database;
-    await db.delete(
-      'registros',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete('registros', where: 'id = ?', whereArgs: [id]);
   }
 }

@@ -4,7 +4,9 @@ import 'package:avisai4/services/location_service.dart';
 import 'package:avisai4/services/user_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../bloc/registro/registro_bloc.dart';
 import '../../../data/models/registro.dart';
@@ -21,18 +23,30 @@ class MapaIrregularidadesScreen extends StatefulWidget {
 }
 
 class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
-  final Completer<GoogleMapController> _controllerCompleter = Completer();
   final LocationService _locationService = LocationService();
 
-  GoogleMapController? _mapController;
-  Set<Marker> _markers = {};
-  CameraPosition? _posicaoInicial;
+  final MapController _mapController = MapController();
+  bool _mapControllerReady = false;
+
+  List<Marker> _markers = [];
+  LatLng _posicaoInicial = const LatLng(
+    -5.08917,
+    -42.80194,
+  ); // Posição padrão: Brasília
   CategoriaIrregularidade? _filtroCategoria;
+  double _zoomAtual = 15.0;
+
+  // Localização atual e streams
+  LatLng? _posicaoAtual;
+  StreamSubscription<Position>? _positionStreamSubscription;
+  bool _seguirLocalizacao =
+      false; // Controla se o mapa deve seguir a localização do usuário
 
   @override
   void initState() {
     super.initState();
     _inicializarMapa();
+    _iniciarMonitoramentoLocalizacao();
 
     // Carregar registros quando a tela for inicializada
     context.read<RegistroBloc>().add(CarregarRegistros());
@@ -40,7 +54,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
 
   @override
   void dispose() {
-    _mapController?.dispose();
+    _positionStreamSubscription?.cancel();
     super.dispose();
   }
 
@@ -50,51 +64,66 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
       final posicao = await _locationService.getCurrentLocation();
 
       setState(() {
-        _posicaoInicial = CameraPosition(
-          target: LatLng(posicao.latitude, posicao.longitude),
-          zoom: 15,
-        );
+        _posicaoInicial = LatLng(posicao.latitude, posicao.longitude);
+        _posicaoAtual = _posicaoInicial;
+        _seguirLocalizacao = true;
       });
     } catch (e) {
       print('Erro ao obter localização: $e');
-
-      // Usar uma posição padrão em caso de erro
-      setState(() {
-        _posicaoInicial = const CameraPosition(
-          target: LatLng(-15.7801, -47.9292), // Brasília
-          zoom: 10,
-        );
-      });
+      // Continuamos com a posição padrão definida na inicialização
     }
   }
 
-  void _onMapCreated(GoogleMapController controller) {
-    _controllerCompleter.complete(controller);
-    _mapController = controller;
+  void _iniciarMonitoramentoLocalizacao() async {
+    // Verificar e solicitar permissões
+    bool serviceEnabled;
+    LocationPermission permission;
 
-    // Atualizar marcadores quando o mapa for criado
-    _atualizarMarcadores();
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return;
+    }
+
+    // Iniciar stream de posição
+    _positionStreamSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5, // Atualiza a cada 5 metros de movimento
+      ),
+    ).listen((Position position) {
+      setState(() {
+        _posicaoAtual = LatLng(position.latitude, position.longitude);
+      });
+
+      // Se modo seguir estiver ativo, mover o mapa junto com a localização
+      if (_seguirLocalizacao && _mapControllerReady) {
+        _mapController.move(_posicaoAtual!, _zoomAtual);
+      }
+    });
   }
 
   Future<void> _irParaPosicaoAtual() async {
-    try {
-      final posicao = await _locationService.getCurrentLocation();
+    if (!_mapControllerReady || _posicaoAtual == null) return;
 
-      final GoogleMapController controller = await _controllerCompleter.future;
-      controller.animateCamera(
-        CameraUpdate.newLatLng(LatLng(posicao.latitude, posicao.longitude)),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao obter localização atual: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    setState(() {
+      _seguirLocalizacao = true; // Ativar modo de seguir localização
+    });
+
+    _mapController.move(_posicaoAtual!, _zoomAtual);
   }
 
-  // Em algum método ou função da sua classe
   Future<String?> obterIdUsuarioLogado() async {
     final usuario = await UserLocalStorage.obterUsuario();
     if (usuario != null) {
@@ -104,68 +133,121 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
   }
 
   void _atualizarMarcadores() async {
-    if (context.mounted) {
-      final state = context.read<RegistroBloc>().state;
+    if (!context.mounted) return;
 
-      if (state is RegistroCarregado) {
-        // Obter ID do usuário logado
-        final usuario = await UserLocalStorage.obterUsuario();
-        final usuarioId = usuario?.id;
+    final state = context.read<RegistroBloc>().state;
 
-        // Filtrar registros por categoria e/ou usuário
-        List<Registro> registros = state.registros;
+    if (state is RegistroCarregado) {
+      // Obter ID do usuário logado
+      final usuario = await UserLocalStorage.obterUsuario();
+      final usuarioId = usuario?.id;
 
-        // Filtrar por categoria se filtro estiver ativo
-        if (_filtroCategoria != null) {
-          registros =
-              registros.where((r) => r.categoria == _filtroCategoria).toList();
-        }
+      // Filtrar registros por categoria e/ou usuário
+      List<Registro> registros = state.registros;
 
-        if (usuarioId != null) {
-          registros = registros.where((r) => r.usuarioId == usuarioId).toList();
-        }
-        setState(() {
-          _markers =
-              registros.map((registro) {
-                return Marker(
-                  markerId: MarkerId(registro.id!),
-                  position: LatLng(registro.latitude, registro.longitude),
-                  infoWindow: InfoWindow(
-                    title: _getCategoriaTexto(registro.categoria),
-                    snippet: registro.endereco ?? 'Endereço não disponível',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  DetalheRegistroScreen(registro: registro),
-                        ),
-                      );
-                    },
+      // Filtrar por categoria se filtro estiver ativo
+      if (_filtroCategoria != null) {
+        registros =
+            registros.where((r) => r.categoria == _filtroCategoria).toList();
+      }
+
+      if (usuarioId != null) {
+        registros = registros.where((r) => r.usuarioId == usuarioId).toList();
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _markers =
+            registros.map((registro) {
+              return Marker(
+                point: LatLng(registro.latitude, registro.longitude),
+                width: 40,
+                height: 40,
+                child: GestureDetector(
+                  onTap: () {
+                    _mostrarInfoWindow(context, registro);
+                  },
+                  child: Icon(
+                    Icons.location_pin,
+                    color: _getCorPorCategoria(registro.categoria),
+                    size: 40,
                   ),
-                  icon: _getIconePorCategoria(registro.categoria),
-                );
-              }).toSet();
-        });
+                ),
+              );
+            }).toList();
+      });
 
-        // Ajustar a visualização para mostrar todos os marcadores, se houver algum
-        if (_markers.isNotEmpty && _mapController != null) {
-          _ajustarVisualizacao(registros);
-        }
+      // Ajustar a visualização para mostrar todos os marcadores, se houver algum
+      if (_markers.isNotEmpty && _mapControllerReady && !_seguirLocalizacao) {
+        _ajustarVisualizacao(registros);
       }
     }
   }
 
+  void _mostrarInfoWindow(BuildContext context, Registro registro) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(_getCategoriaTexto(registro.categoria)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(registro.endereco ?? 'Endereço não disponível'),
+                const SizedBox(height: 10),
+                Text('Status: ${_getStatusTexto(registro.status)}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Fechar'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (context) =>
+                              DetalheRegistroScreen(registro: registro),
+                    ),
+                  );
+                },
+                child: const Text('Ver detalhes'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  String _getStatusTexto(StatusValidacao status) {
+    switch (status) {
+      case StatusValidacao.validado:
+        return 'Validado';
+      case StatusValidacao.naoValidado:
+        return 'Não validado';
+      case StatusValidacao.pendente:
+        return 'Pendente';
+      case StatusValidacao.emExecucao:
+        return 'Em execução';
+      case StatusValidacao.resolvido:
+        return 'Resolvido';
+    }
+  }
+
   Future<void> _ajustarVisualizacao(List<Registro> registros) async {
-    if (registros.isEmpty || _mapController == null) return;
+    if (registros.isEmpty || !_mapControllerReady) return;
 
     // Se houver apenas um registro, centralizar nele
     if (registros.length == 1) {
-      _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(registros.first.latitude, registros.first.longitude),
-          15,
-        ),
+      _mapController.move(
+        LatLng(registros.first.latitude, registros.first.longitude),
+        15.0,
       );
       return;
     }
@@ -183,26 +265,49 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
       if (registro.longitude > maxLng) maxLng = registro.longitude;
     }
 
-    // Criar limites com uma pequena margem
-    final bounds = LatLngBounds(
-      southwest: LatLng(minLat - 0.01, minLng - 0.01),
-      northeast: LatLng(maxLat + 0.01, maxLng + 0.01),
-    );
+    // Adicionar margem
+    minLat -= 0.01;
+    maxLat += 0.01;
+    minLng -= 0.01;
+    maxLng += 0.01;
 
-    // Ajustar a câmera para mostrar todos os marcadores
-    _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
+    // Calcular o centro
+    final centerLat = (minLat + maxLat) / 2;
+    final centerLng = (minLng + maxLng) / 2;
+
+    // Calcular zoom baseado na distância
+    final latDiff = (maxLat - minLat).abs();
+    final lngDiff = (maxLng - minLng).abs();
+    final maxDiff = latDiff > lngDiff ? latDiff : lngDiff;
+
+    // Ajustar zoom com base na diferença máxima
+    double zoom = 15.0;
+    if (maxDiff > 0.5)
+      zoom = 8.0;
+    else if (maxDiff > 0.2)
+      zoom = 10.0;
+    else if (maxDiff > 0.1)
+      zoom = 12.0;
+    else if (maxDiff > 0.05)
+      zoom = 13.0;
+    else if (maxDiff > 0.01)
+      zoom = 14.0;
+
+    _mapController.move(LatLng(centerLat, centerLng), zoom);
+    setState(() {
+      _zoomAtual = zoom;
+      _seguirLocalizacao = false; // Desativar modo de seguir localização
+    });
   }
 
-  BitmapDescriptor _getIconePorCategoria(CategoriaIrregularidade categoria) {
-    // Na implementação real, você pode usar ícones personalizados
-    // Para simplificar, estamos usando os ícones padrão
+  Color _getCorPorCategoria(CategoriaIrregularidade categoria) {
     switch (categoria) {
       case CategoriaIrregularidade.buraco:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+        return Colors.red;
       case CategoriaIrregularidade.posteDefeituoso:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+        return Colors.blue;
       case CategoriaIrregularidade.lixoIrregular:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+        return Colors.green;
     }
   }
 
@@ -223,32 +328,93 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
       body: BlocConsumer<RegistroBloc, RegistroState>(
         listener: (context, state) {
           if (state is RegistroCarregado) {
-            _atualizarMarcadores();
-          } else if (state is RegistroErro) {
-            // ScaffoldMessenger.of(context).showSnackBar(
-            //   SnackBar(
-            //     content: Text(state.mensagem),
-            //     backgroundColor: Colors.red,
-            //   ),
-            // );
+            // Atualizamos os marcadores após o próximo frame para garantir que o mapa esteja pronto
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _atualizarMarcadores();
+            });
           }
         },
         builder: (context, state) {
           return Stack(
             children: [
               // Mapa
-              _posicaoInicial == null
-                  ? const Center(child: CircularProgressIndicator())
-                  : GoogleMap(
-                    mapType: MapType.normal,
-                    initialCameraPosition: _posicaoInicial!,
-                    onMapCreated: _onMapCreated,
-                    markers: _markers,
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: false,
-                    zoomControlsEnabled: false,
-                    mapToolbarEnabled: false,
+              FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _posicaoInicial,
+                  initialZoom: 15.0,
+                  onMapReady: () {
+                    setState(() {
+                      _mapControllerReady = true;
+                    });
+                    if (_posicaoAtual != null && _seguirLocalizacao) {
+                      _mapController.move(_posicaoAtual!, _zoomAtual);
+                    }
+
+                    _atualizarMarcadores();
+                  },
+                  onPositionChanged: (position, hasGesture) {
+                    if (hasGesture) {
+                      setState(() {
+                        _zoomAtual = position.zoom;
+                        _seguirLocalizacao =
+                            false; // Desativar seguir localização quando o usuário move o mapa
+                      });
+                    }
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.avisai.app',
+                    subdomains: const ['a', 'b', 'c'],
+                    maxZoom: 19,
                   ),
+                  // Camada de marcadores para registros
+                  MarkerLayer(markers: _markers),
+
+                  // Camada de marcador para localização atual
+                  if (_posicaoAtual != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _posicaoAtual!,
+                          width: 24,
+                          height: 24,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withOpacity(0.7),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: Center(
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  RichAttributionWidget(
+                    attributions: [
+                      TextSourceAttribution(
+                        'OpenStreetMap contributors',
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
 
               // Barra de status de conectividade
               Positioned(
@@ -351,9 +517,58 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                       heroTag: 'btn_localizacao',
                       onPressed: _irParaPosicaoAtual,
                       backgroundColor: Colors.white,
-                      foregroundColor: Theme.of(context).primaryColor,
+                      foregroundColor:
+                          _seguirLocalizacao
+                              ? Theme.of(context).primaryColor
+                              : Colors.grey,
                       tooltip: 'Minha localização',
                       child: const Icon(Icons.my_location),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Controles de zoom
+              Positioned(
+                bottom: 16,
+                right: 80,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FloatingActionButton.small(
+                      heroTag: 'btn_zoom_in',
+                      onPressed: () {
+                        if (!_mapControllerReady) return;
+                        setState(() {
+                          _zoomAtual += 1.0;
+                          if (_zoomAtual > 19.0) _zoomAtual = 19.0;
+                        });
+                        _mapController.move(
+                          _mapController.camera.center,
+                          _zoomAtual,
+                        );
+                      },
+                      backgroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).primaryColor,
+                      child: const Icon(Icons.add),
+                    ),
+                    const SizedBox(height: 8),
+                    FloatingActionButton.small(
+                      heroTag: 'btn_zoom_out',
+                      onPressed: () {
+                        if (!_mapControllerReady) return;
+                        setState(() {
+                          _zoomAtual -= 1.0;
+                          if (_zoomAtual < 3.0) _zoomAtual = 3.0;
+                        });
+                        _mapController.move(
+                          _mapController.camera.center,
+                          _zoomAtual,
+                        );
+                      },
+                      backgroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).primaryColor,
+                      child: const Icon(Icons.remove),
                     ),
                   ],
                 ),

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:avisai4/data/models/registro.dart';
@@ -46,20 +47,7 @@ class RegistroCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   // Imagem principal
-                  Image.file(
-                    File(imagemUrl),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: Icon(
-                          Icons.image_not_supported,
-                          size: 50.0,
-                          color: Colors.grey[600],
-                        ),
-                      );
-                    },
-                  ),
+                  _buildImageFromBase64(imagemUrl),
 
                   // Badges de status
                   Positioned(
@@ -190,6 +178,36 @@ class RegistroCard extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Adicionar este método à classe
+  Widget _buildImageFromBase64(String base64String) {
+    try {
+      if (base64String.isEmpty) {
+        return _buildImagePlaceholder();
+      }
+
+      return Image.memory(
+        base64Decode(base64String),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildImagePlaceholder();
+        },
+      );
+    } catch (e) {
+      return _buildImagePlaceholder();
+    }
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Container(
+      color: Colors.grey[300],
+      child: Icon(
+        Icons.image_not_supported,
+        size: 50.0,
+        color: Colors.grey[600],
       ),
     );
   }

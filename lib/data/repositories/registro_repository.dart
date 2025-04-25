@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:avisai4/services/local_storage_service.dart';
 import 'package:uuid/uuid.dart';
@@ -25,29 +26,17 @@ class RegistroRepository {
        _locationService = locationService,
        _connectivityService = ConnectivityService();
 
-  // Salvar foto em armazenamento permanente
-  Future<String> _salvarFotoPermanente(String caminhoFotoTemporario) async {
+  // Converter foto para base64
+  Future<String> _converterFotoParaBase64(String caminhoFotoTemporario) async {
     try {
-      final diretorioDocumentos = await getApplicationDocumentsDirectory();
-      final pastaFotos = Directory('${diretorioDocumentos.path}/fotos');
-
-      // Criar pasta se não existir
-      if (!await pastaFotos.exists()) {
-        await pastaFotos.create(recursive: true);
-      }
-
-      // Gerar nome único para a foto
-      final nomeArquivo = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final caminhoDestino = path.join(pastaFotos.path, nomeArquivo);
-
-      // Copiar arquivo
-      final arquivoOriginal = File(caminhoFotoTemporario);
-      await arquivoOriginal.copy(caminhoDestino);
-
-      return caminhoDestino;
+      final File arquivoOriginal = File(caminhoFotoTemporario);
+      final bytes = await arquivoOriginal.readAsBytes();
+      final base64String = base64Encode(bytes);
+      return base64String;
     } catch (e) {
-      print('Erro ao salvar foto: $e');
-      return caminhoFotoTemporario; // Retorna o caminho original em caso de erro
+      print('Erro ao converter foto para base64: $e');
+      // Em caso de erro, retornar uma string vazia ou tratar como apropriado
+      return '';
     }
   }
 
@@ -153,15 +142,13 @@ class RegistroRepository {
       };
     }
 
-    // Copiar a foto para armazenamento permanente
-    String caminhoFotoPermanente;
+    // Converter a foto para base64
+    String fotoBase64;
     try {
-      caminhoFotoPermanente = await _salvarFotoPermanente(
-        caminhoFotoTemporario,
-      );
+      fotoBase64 = await _converterFotoParaBase64(caminhoFotoTemporario);
     } catch (e) {
-      print('Erro ao salvar foto, usando caminho original: $e');
-      caminhoFotoPermanente = caminhoFotoTemporario;
+      print('Erro ao converter foto para base64: $e');
+      fotoBase64 = ''; // String vazia em caso de erro
     }
 
     // Criar objeto registro
@@ -177,7 +164,7 @@ class RegistroRepository {
       rua: dadosEndereco['rua'],
       bairro: dadosEndereco['bairro'],
       cidade: dadosEndereco['cidade'],
-      caminhoFoto: caminhoFotoPermanente,
+      base64Foto: fotoBase64,
       status: StatusValidacao.pendente,
       sincronizado: false, // Sempre false inicialmente
     );

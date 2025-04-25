@@ -123,41 +123,19 @@ class ApiProvider {
     final url = Uri.parse('$baseUrl/registros');
 
     try {
-      final request = http.MultipartRequest('POST', url);
-
-      if (headers.containsKey('Authorization')) {
-        request.headers['Authorization'] = headers['Authorization']!;
-      }
-
+      // Criar o objeto de dados para enviar
       final dadosRegistro = registro.toJson();
 
+      // Remover campos desnecessários para a API
       dadosRegistro.remove('id');
-      dadosRegistro.remove('caminhoFoto');
       dadosRegistro.remove('sincronizado');
 
-      dadosRegistro.forEach((key, value) {
-        if (value != null) {
-          request.fields[key] = value.toString();
-        }
-      });
-
-      final arquivoImagem = File(registro.caminhoFoto);
-      if (await arquivoImagem.exists()) {
-        final stream = http.ByteStream(arquivoImagem.openRead());
-        final length = await arquivoImagem.length();
-
-        final multipartFile = http.MultipartFile(
-          'foto',
-          stream,
-          length,
-          filename: registro.caminhoFoto.split('/').last,
-        );
-
-        request.files.add(multipartFile);
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      // Enviar tudo como uma única requisição JSON, incluindo o base64
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode(dadosRegistro),
+      );
 
       if (response.statusCode == 201) {
         final dados = jsonDecode(response.body);

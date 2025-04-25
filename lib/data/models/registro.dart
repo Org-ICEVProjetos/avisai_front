@@ -14,7 +14,7 @@ class Registro {
   final String? rua;
   final String? bairro;
   final String? cidade;
-  final String caminhoFoto;
+  final String base64Foto;
   final StatusValidacao status;
   final bool sincronizado;
   final String? validadoPorUsuarioId;
@@ -32,7 +32,7 @@ class Registro {
     this.rua,
     this.bairro,
     this.cidade,
-    required this.caminhoFoto,
+    required this.base64Foto,
     this.status = StatusValidacao.pendente,
     this.sincronizado = false,
     this.validadoPorUsuarioId,
@@ -51,7 +51,7 @@ class Registro {
     String? rua,
     String? bairro,
     String? cidade,
-    String? caminhoFoto,
+    String? base64Foto,
     StatusValidacao? status,
     bool? sincronizado,
     String? validadoPorUsuarioId,
@@ -69,7 +69,7 @@ class Registro {
       rua: rua ?? this.rua,
       bairro: bairro ?? this.bairro,
       cidade: cidade ?? this.cidade,
-      caminhoFoto: caminhoFoto ?? this.caminhoFoto,
+      base64Foto: base64Foto ?? this.base64Foto,
       status: status ?? this.status,
       sincronizado: sincronizado ?? this.sincronizado,
       validadoPorUsuarioId: validadoPorUsuarioId ?? this.validadoPorUsuarioId,
@@ -91,7 +91,7 @@ class Registro {
       'rua': rua,
       'bairro': bairro,
       'cidade': cidade,
-      'caminhoFoto': caminhoFoto,
+      'base64Foto': base64Foto,
       'status': status.toString(),
       'sincronizado': sincronizado ? 1 : 0, // Converte boolean para int
       'validadoPorUsuarioId': validadoPorUsuarioId,
@@ -113,7 +113,7 @@ class Registro {
       rua: json['rua'],
       bairro: json['bairro'],
       cidade: json['cidade'],
-      caminhoFoto: json['caminhoFoto'],
+      base64Foto: json['base64Foto'],
       status: _statusFromString(json['status']),
       sincronizado: json['sincronizado'] == 1, // Converte int para boolean
       validadoPorUsuarioId: json['validadoPorUsuarioId'],

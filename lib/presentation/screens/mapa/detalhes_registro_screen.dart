@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:avisai4/data/models/registro.dart';
@@ -55,7 +56,7 @@ class DetalheRegistroScreen extends StatelessWidget {
       case StatusValidacao.pendente:
         return Colors.blue;
       case StatusValidacao.resolvido:
-        return Colors.green;
+        return Colors.greenAccent;
       case StatusValidacao.emExecucao:
         return Colors.deepOrange;
     }
@@ -124,9 +125,38 @@ class DetalheRegistroScreen extends StatelessWidget {
     );
   }
 
+  // No buildImage:
+  Widget _buildImageFromBase64(String base64String) {
+    try {
+      if (base64String.isEmpty) {
+        return _buildImagePlaceholder();
+      }
+
+      return Image.memory(base64Decode(base64String), fit: BoxFit.cover);
+    } catch (e) {
+      return _buildImagePlaceholder();
+    }
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.broken_image, size: 64, color: Colors.grey[600]),
+          const SizedBox(height: 8),
+          Text(
+            'Imagem não disponível',
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bool imagemExiste = File(registro.caminhoFoto).existsSync();
+    final bool imagemExiste = File(registro.base64Foto).existsSync();
 
     return Scaffold(
       appBar: AppBar(
@@ -190,29 +220,7 @@ class DetalheRegistroScreen extends StatelessWidget {
                     fit: StackFit.expand,
                     children: [
                       // Imagem
-                      if (imagemExiste)
-                        Image.file(
-                          File(registro.caminhoFoto),
-                          fit: BoxFit.cover,
-                        )
-                      else
-                        Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.broken_image,
-                                size: 64,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Imagem não disponível',
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                            ],
-                          ),
-                        ),
+                      _buildImageFromBase64(registro.base64Foto),
 
                       // Status badges
                       Positioned(

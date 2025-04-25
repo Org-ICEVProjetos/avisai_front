@@ -1,7 +1,5 @@
 import 'dart:io';
 import 'dart:math' as math;
-
-import 'package:exif/exif.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
@@ -88,44 +86,55 @@ class LocationService {
   ) async {
     try {
       // Primeiro tenta usar a API do Google Maps
-      return await _getAddressFromGoogleMaps(latitude, longitude);
+      return await _getAddressFromOpenStreetMap(latitude, longitude);
     } catch (e) {
       // Se falhar, usar o geocoding local
       return await _getAddressFromGeocoding(latitude, longitude);
     }
   }
 
-  Future<Map<String, String>> _getAddressFromGoogleMaps(
+  Future<Map<String, String>> _getAddressFromOpenStreetMap(
     double latitude,
     double longitude,
   ) async {
-    const apiKey = ApiConfig.googleMapsApiKey;
-    final url =
-        'https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=$apiKey';
+    try {
+      final url =
+          'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1';
 
-    final response = await http.get(Uri.parse(url));
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'User-Agent': 'Avisai/1.0', // Importante para a API Nominatim
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['status'] == 'OK' && data['results'].isNotEmpty) {
-        final result = data['results'][0];
-        String endereco = result['formatted_address'] ?? '';
-        String rua = '';
-        String bairro = '';
-        String cidade = '';
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
 
         // Extrair componentes do endereço
-        for (var component in result['address_components']) {
-          final types = component['types'];
-          if (types.contains('route')) {
-            rua = component['long_name'];
-          } else if (types.contains('sublocality_level_1') ||
-              types.contains('sublocality')) {
-            bairro = component['long_name'];
-          } else if (types.contains('administrative_area_level_2')) {
-            cidade = component['long_name'];
-          }
-        }
+        final addressComponents = data['address'] as Map<String, dynamic>;
+
+        // Endereço completo
+        final endereco = data['display_name'] ?? 'Não disponível';
+
+        // Componentes individuais
+        final rua =
+            addressComponents['road'] ??
+            addressComponents['pedestrian'] ??
+            addressComponents['footway'] ??
+            'Não disponível';
+
+        final bairro =
+            addressComponents['suburb'] ??
+            addressComponents['neighbourhood'] ??
+            addressComponents['district'] ??
+            'Não disponível';
+
+        final cidade =
+            addressComponents['city'] ??
+            addressComponents['town'] ??
+            addressComponents['village'] ??
+            'Não disponível';
 
         return {
           'endereco': endereco,
@@ -134,9 +143,24 @@ class LocationService {
           'cidade': cidade,
         };
       }
-    }
 
-    throw Exception('Não foi possível obter o endereço da Google Maps API');
+      // Retornar valores padrão em caso de erro
+      return {
+        'endereco': 'Não disponível',
+        'rua': 'Não disponível',
+        'bairro': 'Não disponível',
+        'cidade': 'Não disponível',
+      };
+    } catch (e) {
+      print('Erro ao obter endereço: $e');
+      // Em caso de erro, retornar valores padrão
+      return {
+        'endereco': 'Não disponível',
+        'rua': 'Não disponível',
+        'bairro': 'Não disponível',
+        'cidade': 'Não disponível',
+      };
+    }
   }
 
   Future<Map<String, String>> _getAddressFromGeocoding(
@@ -166,83 +190,6 @@ class LocationService {
     }
 
     throw Exception('Não foi possível obter o endereço');
-  }
-
-  Future<Map<String, double>?> getCoordinatesFromImageMetadata(
-    String imagePath,
-  ) async {
-    try {
-      // Ler os metadados EXIF da imagem
-      final file = File(imagePath);
-      final bytes = await file.readAsBytes();
-      final tags = await readExifFromBytes(bytes);
-
-      // Log completo para debug
-      print('Tags EXIF encontradas: ${tags.length}');
-      tags.forEach((key, value) {
-        print('Tag: $key, Valor: ${value.printable}');
-      });
-
-      // Verificar especificamente por tags GPS
-      final gpsKeys = tags.keys.where((k) => k.startsWith('GPS')).toList();
-      print('Tags GPS encontradas: $gpsKeys');
-
-      // Se não houver dados GPS, retornar null
-      if (gpsKeys.isEmpty) {
-        print('Nenhuma tag GPS encontrada na imagem');
-        return null;
-      }
-
-      // Tentar obter as tags específicas de que precisamos
-      IfdTag? latTag = tags['GPS GPSLatitude'];
-      IfdTag? latRefTag = tags['GPS GPSLatitudeRef'];
-      IfdTag? longTag = tags['GPS GPSLongitude'];
-      IfdTag? longRefTag = tags['GPS GPSLongitudeRef'];
-
-      // Log de disponibilidade
-      print('Lat tag: ${latTag != null ? "encontrada" : "não encontrada"}');
-      print('Lat ref: ${latRefTag?.printable}');
-      print('Long tag: ${longTag != null ? "encontrada" : "não encontrada"}');
-      print('Long ref: ${longRefTag?.printable}');
-
-      // Se faltarem tags necessárias, retornar null
-      if (latTag == null ||
-          latRefTag == null ||
-          longTag == null ||
-          longRefTag == null) {
-        print('Dados GPS incompletos na imagem');
-        return null;
-      }
-
-      // Extrair e converter valores
-      try {
-        // Converter coordenadas
-        String latRef = latRefTag.printable;
-        String longRef = longRefTag.printable;
-
-        // Detalhar os valores para debug
-        print('Lat raw: ${latTag.printable}');
-        print('Long raw: ${longTag.printable}');
-
-        // Extrair números das strings (formato: "X deg Y' Z" S/N/E/W)
-        double latitude = _parseGpsCoordinate(latTag.printable);
-        double longitude = _parseGpsCoordinate(longTag.printable);
-
-        // Ajustar direção
-        if (latRef == 'S') latitude = -latitude;
-        if (longRef == 'W') longitude = -longitude;
-
-        print('Coordenadas extraídas: Lat=$latitude, Long=$longitude');
-
-        return {'latitude': latitude, 'longitude': longitude};
-      } catch (e) {
-        print('Erro ao converter coordenadas: $e');
-        return null;
-      }
-    } catch (e) {
-      print('Erro ao ler metadados da imagem: $e');
-      return null;
-    }
   }
 
   // Função para analisar uma coordenada GPS de uma string

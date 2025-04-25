@@ -299,13 +299,13 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
             ),
           );
         } else if (state is RegistroErro) {
-          // Mostra erro mas não fecha a tela
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Erro na API, mas registro salvo localmente"),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          // // Mostra erro mas não fecha a tela
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   SnackBar(
+          //     content: Text("Erro na API, mas registro salvo localmente"),
+          //     backgroundColor: Colors.orange,
+          //   ),
+          // );
         }
       },
       child: Scaffold(
