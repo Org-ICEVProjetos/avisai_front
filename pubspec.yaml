@@ -29,12 +29,13 @@ dependencies:
   google_fonts: ^6.2.1
   intl: ^0.19.0
   url_launcher: ^6.3.1
-  # google_maps_flutter: ^2.10.1
+  google_maps_flutter: ^2.10.1
   flutter_svg: ^2.0.17
   cached_network_image: ^3.4.1
   mockito: ^5.4.4
   flutter_map: ^8.1.1
   latlong2: ^0.9.1
+  flutter_multi_formatter: ^2.13.7
 
 dev_dependencies:
   flutter_test:
@@ -48,3 +49,28 @@ flutter:
     - 'assets/images/onboarding_city.png'
     - 'assets/images/onboarding_report.png'
     - 'assets/images/onboarding_welcome.png'
+    - 'assets/images/logo.png'
+    - 'assets/images/login.png'
+    - 'assets/images/recuperacao_senha.png'
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Thin.otf
+          weight: 100
+        - asset: assets/fonts/Inter-ExtraLight.otf
+          weight: 200
+        - asset: assets/fonts/Inter-Light.otf
+          weight: 300
+        - asset: assets/fonts/Inter-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.otf
+          weight: 700
+        - asset: assets/fonts/Inter-ExtraBold.otf
+          weight: 800
+        - asset: assets/fonts/Inter-Black.otf
+          weight: 900

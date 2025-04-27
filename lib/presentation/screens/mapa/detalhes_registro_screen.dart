@@ -69,8 +69,8 @@ class DetalheRegistroScreen extends StatelessWidget {
   ) async {
     final url =
         'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
-    if (await canLaunch(url)) {
-      await launch(url);
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -115,7 +115,6 @@ class DetalheRegistroScreen extends StatelessWidget {
                   context.read<RegistroBloc>().add(
                     RemoverRegistro(registroId: registro.id!),
                   );
-                  Navigator.of(context).pop(); // Voltar para a tela anterior
                 },
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
                 child: const Text('Remover'),

@@ -18,27 +18,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingPageData> _pages = [
     OnboardingPageData(
+      image: 'assets/images/onboarding_welcome.png',
+      title: 'Bem-vindo ao ',
+      titleHighlight: 'Avisaí',
+      titleEnd: '',
+      description: 'Ajude a transformar sua cidade com poucos toques na tela.',
+      customTitle: true, // <- "Avis" e "aí" com cores diferentes
+    ),
+    OnboardingPageData(
+      image: 'assets/images/onboarding_report.png',
+      title: 'Registre uma ',
+      titleHighlight: 'Irregularidade',
+      titleEnd: '',
+      description:
+          'Tire uma foto, selecione o tipo de irregularidade e toque em "Enviar". A prefeitura será notificada',
+      customDescription: true, // <- Colorir "prefeitura"
+    ),
+    OnboardingPageData(
       image: 'assets/images/onboarding_city.png',
-      title: 'Transformando',
+      title: 'Transformando ',
       titleHighlight: 'Teresina',
       titleEnd: ' com você',
       description:
           'Cada registro ajuda a construir uma cidade mais segura, limpa e bem cuidada. Sua participação faz a diferença!',
-    ),
-    OnboardingPageData(
-      image: 'assets/images/onboarding_report.png',
-      title: 'Registre uma',
-      titleHighlight: 'Irregularidade',
-      titleEnd: '',
-      description:
-          'Viu um problema na cidade? Tire uma foto, selecione o tipo de irregularidade e toque em "Enviar". A prefeitura será notificada.',
-    ),
-    OnboardingPageData(
-      image: 'assets/images/onboarding_welcome.png',
-      title: 'Bem-vindo ao',
-      titleHighlight: 'Avisaí',
-      titleEnd: '',
-      description: 'Ajude a transformar sua cidade com poucos toques na tela.',
+      customDescription: true, // <- Colorir "segura", "limpa", "bem cuidada"
     ),
   ];
 
@@ -55,9 +58,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      // Marcar que o tutorial já foi mostrado
-      _salvarTutorialMostrado();
-
       // Verificar permissões antes de ir para a Home
       _verificarPermissoes();
     }
@@ -92,63 +92,105 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return WillPopScope(
-          onWillPop:
-              () async =>
-                  false, // Impedir que o diálogo seja fechado com o botão de voltar
+          onWillPop: () async => false, // Impedir voltar
           child: AlertDialog(
-            title: const Text('Permissões necessárias'),
-            content: SingleChildScrollView(
-              child: ListBody(
-                children: const [
-                  Text(
-                    'Para utilizar todas as funcionalidades do aplicativo, precisamos de algumas permissões:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.camera_alt, size: 20),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Câmera: para registrar as irregularidades com fotos',
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.location_on, size: 20),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Localização: para identificar onde as irregularidades foram encontradas',
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Essas permissões são essenciais para o funcionamento do aplicativo e para garantir a precisão das informações.',
-                  ),
-                ],
-              ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
+            contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Ícone da pasta
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    const Icon(Icons.folder, color: Colors.orange, size: 48),
+                    // SizedBox(width: 10),
+                    const Text(
+                      'Permissão de acesso',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Título
+                const SizedBox(height: 16),
+
+                // Corpo do texto
+                const Text.rich(
+                  TextSpan(
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.black87,
+                      fontFamily: 'Inter',
+                      height: 1.5,
+                    ),
+                    children: [
+                      TextSpan(
+                        text:
+                            'Para uma melhor experiência, é necessário permitir o acesso à ',
+                      ),
+                      TextSpan(
+                        text: 'câmera',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(text: ', à '),
+                      TextSpan(
+                        text: 'galeria de mídia',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(text: ' e à '),
+                      TextSpan(
+                        text: 'localização',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(text: ' do seu dispositivo.'),
+                    ],
+                  ),
+                  textAlign: TextAlign.left,
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+            actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             actions: [
-              TextButton(
-                child: const Text('Entendi'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Garantir que o diálogo seja fechado completamente antes de solicitar permissões
-                  Future.delayed(const Duration(milliseconds: 100), () {
-                    if (mounted) {
-                      _solicitarPermissoes();
-                    }
-                  });
-                },
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Delay para abrir a solicitação de permissões
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      if (mounted) {
+                        _solicitarPermissoes();
+                      }
+                      // Marcar que o tutorial já foi mostrado
+                      _salvarTutorialMostrado();
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF022865),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: const Text(
+                      'Continuar',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -269,56 +311,64 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 16.0,
-              ),
-              child: Column(
+            // Bottom navigation area with page dots on left, arrows on right
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Indicadores de página
+                  // Page indicators on left
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
                       _pages.length,
                       (index) => buildPageIndicator(index == _currentPage),
                     ),
                   ),
-                  const SizedBox(height: 24),
 
-                  // Botões de navegação
+                  // Navigation buttons together on right
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Botão Voltar (visível apenas após a primeira página)
+                      // Back button (only visible after first page)
                       _currentPage > 0
-                          ? IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: _previousPage,
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.grey[200],
-                              foregroundColor: Colors.blue[700],
-                              padding: const EdgeInsets.all(12),
-                              shape: const CircleBorder(),
+                          ? Container(
+                            width: 60,
+                            height: 60,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[100],
+                              shape: BoxShape.circle,
+
+                              border: Border.all(color: Colors.blue, width: 2),
+                            ),
+
+                            child: IconButton(
+                              icon: const Icon(Icons.arrow_back),
+                              iconSize: 30,
+                              color: const Color(0xFF022865),
+                              onPressed: _previousPage,
+                              padding: EdgeInsets.zero,
                             ),
                           )
-                          : const SizedBox(
-                            width: 48,
-                          ), // Espaço vazio na primeira página
-                      // Botão Avançar/Concluir
-                      IconButton(
-                        icon: const Icon(Icons.arrow_forward),
-                        onPressed: _nextPage,
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.blue[700],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.all(12),
-                          shape: const CircleBorder(),
+                          : const SizedBox.shrink(),
+
+                      // Next/Finish button
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF022865),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_forward),
+                          iconSize: 30,
+                          color: Colors.white,
+                          onPressed: _nextPage,
+                          padding: EdgeInsets.zero,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -331,11 +381,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget buildPageIndicator(bool isActive) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4.0),
-      height: 8.0,
-      width: 8.0,
+      height: 14.0,
+      width: 14.0,
       decoration: BoxDecoration(
-        color: isActive ? Colors.blue[700] : Colors.grey[300],
-        borderRadius: BorderRadius.circular(4.0),
+        color: isActive ? Theme.of(context).primaryColor : Colors.grey[300],
+        borderRadius: BorderRadius.circular(30.0),
       ),
     );
   }
@@ -348,6 +398,8 @@ class OnboardingPageData {
   final String titleHighlight;
   final String titleEnd;
   final String description;
+  final bool customTitle;
+  final bool customDescription;
 
   OnboardingPageData({
     required this.image,
@@ -355,10 +407,11 @@ class OnboardingPageData {
     required this.titleHighlight,
     required this.titleEnd,
     required this.description,
+    this.customTitle = false, // << Novo
+    this.customDescription = false, // << Novo
   });
 }
 
-// Widget para cada página do onboarding
 class OnboardingPage extends StatelessWidget {
   final OnboardingPageData data;
 
@@ -366,39 +419,178 @@ class OnboardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 0.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Image.asset(data.image, fit: BoxFit.contain)),
-          const SizedBox(height: 24),
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: const TextStyle(
-                fontSize: 24.0,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-              children: [
-                TextSpan(text: data.title),
-                TextSpan(
-                  text: data.titleHighlight,
-                  style: TextStyle(color: Colors.blue[700]),
-                ),
-                TextSpan(text: data.titleEnd),
-              ],
+          Expanded(
+            flex: 3,
+            child: Center(
+              child: Image.asset(data.image, fit: BoxFit.contain, height: 420),
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            data.description,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16.0, color: Colors.grey[600]),
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                data.customTitle
+                    ? _buildCustomTitle(context)
+                    : _buildDefaultTitle(context),
+                const SizedBox(height: 16),
+                data.customDescription
+                    ? _buildCustomDescription(context)
+                    : _buildDefaultDescription(context),
+              ],
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildDefaultTitle(BuildContext context) {
+    return RichText(
+      textAlign: TextAlign.left,
+      text: TextSpan(
+        style: const TextStyle(
+          fontSize: 40.0,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+          fontFamily: 'Inter',
+        ),
+        children: [
+          TextSpan(text: data.title),
+          TextSpan(
+            text: data.titleHighlight,
+            style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+          ),
+          TextSpan(text: data.titleEnd),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomTitle(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+    final secondaryColor = Theme.of(context).colorScheme.secondary;
+
+    return RichText(
+      textAlign: TextAlign.left,
+      text: TextSpan(
+        style: const TextStyle(
+          fontSize: 40.0,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Inter',
+        ),
+        children: [
+          TextSpan(
+            text: data.title,
+            style: const TextStyle(color: Colors.black87),
+          ),
+          TextSpan(text: 'Avis', style: TextStyle(color: primaryColor)),
+          TextSpan(text: 'aí', style: TextStyle(color: secondaryColor)),
+          TextSpan(
+            text: data.titleEnd,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultDescription(BuildContext context) {
+    return Text(
+      data.description,
+      textAlign: TextAlign.left,
+      style: TextStyle(
+        fontSize: 20.0,
+        color: Colors.grey[800],
+        fontFamily: 'Inter',
+        height: 1.4,
+      ),
+    );
+  }
+
+  Widget _buildCustomDescription(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+
+    if (data.description.contains('prefeitura')) {
+      // Segunda página
+      final parts = data.description.split('prefeitura');
+      return RichText(
+        text: TextSpan(
+          style: const TextStyle(
+            fontSize: 20.0,
+            color: Colors.black87,
+            fontFamily: 'Inter',
+            height: 1.4,
+          ),
+          children: [
+            TextSpan(text: parts[0], style: TextStyle(color: Colors.grey[800])),
+            TextSpan(
+              text: 'prefeitura',
+              style: TextStyle(
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(text: parts[1], style: TextStyle(color: Colors.grey[800])),
+          ],
+        ),
+      );
+    } else {
+      // Terceira página
+      return RichText(
+        text: TextSpan(
+          style: const TextStyle(
+            fontSize: 20.0,
+            color: Colors.black87,
+            fontFamily: 'Inter',
+            height: 1.4,
+          ),
+          children: [
+            TextSpan(
+              text: 'Cada registro ajuda a construir uma cidade mais ',
+              style: TextStyle(color: Colors.grey[800]),
+            ),
+            TextSpan(
+              text: 'segura',
+              style: TextStyle(
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(text: ', ', style: TextStyle(color: Colors.grey[800])),
+            TextSpan(
+              text: 'limpa',
+              style: TextStyle(
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(text: ' e ', style: TextStyle(color: Colors.grey[800])),
+            TextSpan(
+              text: 'bem cuidada',
+              style: TextStyle(
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(
+              text: '. Sua participação faz a diferença!',
+              style: TextStyle(color: Colors.grey[800]),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }

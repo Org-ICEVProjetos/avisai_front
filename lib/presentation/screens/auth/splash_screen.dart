@@ -3,6 +3,7 @@ import 'package:avisai4/services/user_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import 'login_screen.dart';
 import '../home/home_screen.dart';
@@ -26,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Configurar animação
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 1),
     );
 
     _animation = CurvedAnimation(
@@ -79,7 +80,8 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor,
+      backgroundColor:
+          Theme.of(context).primaryColor, // Azul escuro conforme a imagem
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is Autenticado) {
@@ -98,58 +100,44 @@ class _SplashScreenState extends State<SplashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo animado
+              // Logo animado - Usando a imagem logo.png
               FadeTransition(
                 opacity: _animation,
                 child: ScaleTransition(
                   scale: _animation,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.report_problem,
-                      size: 80,
-                      color: Theme.of(context).primaryColor,
-                    ),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 250,
+                    height: 250,
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
 
-              // Título
+              // Nome do app como na imagem, em um container com fundo branco
               FadeTransition(
                 opacity: _animation,
-                child: const Text(
-                  'Avisaí',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.inter(
+                        fontSize: 38,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      children: const [
+                        TextSpan(text: 'Avisa'),
+                        TextSpan(
+                          text: 'í',
+                          style: TextStyle(color: Color(0xFFFF8800)),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-
-              // Subtítulo
-              FadeTransition(
-                opacity: _animation,
-                child: Text(
-                  'Ajude a melhorar sua cidade',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 48),
-
-              // Indicador de carregamento
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ],
           ),

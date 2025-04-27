@@ -15,11 +15,13 @@ import '../widgets/offline_badge.dart';
 class NovoRegistroScreen extends StatefulWidget {
   final String usuarioId;
   final String usuarioNome;
+  final bool isVisible;
 
   const NovoRegistroScreen({
     super.key,
     required this.usuarioId,
     required this.usuarioNome,
+    this.isVisible = false,
   });
 
   @override
@@ -61,6 +63,54 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       print("Erro ao liberar câmera no dispose: $e");
     }
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(NovoRegistroScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Se a visibilidade mudou
+    if (oldWidget.isVisible != widget.isVisible) {
+      if (widget.isVisible) {
+        // Inicializar câmera quando a tela ficar visível
+        if (_cameraController == null ||
+            !_cameraController!.value.isInitialized) {
+          _inicializarCamera();
+        }
+      } else {
+        // Liberar câmera quando a tela ficar invisível
+        _liberarCamera();
+      }
+    }
+  }
+
+  Future<void> _liberarCamera() async {
+    try {
+      if (_cameraController != null) {
+        final wasInitialized = _cameraController!.value.isInitialized;
+        await _cameraController!.dispose();
+
+        // Atualizar o estado imediatamente para evitar que a interface tente acessar
+        // um controlador descartado
+        if (mounted && wasInitialized) {
+          setState(() {
+            _cameraController = null;
+          });
+        } else {
+          _cameraController = null;
+        }
+      }
+    } catch (e) {
+      print("Erro ao liberar câmera: $e");
+      // Garantir que o controlador seja nulo mesmo em caso de erro
+      if (mounted) {
+        setState(() {
+          _cameraController = null;
+        });
+      } else {
+        _cameraController = null;
+      }
+    }
   }
 
   Future<void> _inicializarCamera() async {
@@ -329,21 +379,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            _tirouFoto ? 'A foto ficou boa?' : "Registrar Irregularidade",
-          ),
-          actions: [
-            BlocBuilder<RegistroBloc, RegistroState>(
-              builder: (context, state) {
-                if (state is RegistroCarregado && !state.estaOnline) {
-                  return const OfflineBadge();
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ],
-        ),
         body:
             _inicializando
                 ? const Center(child: CircularProgressIndicator())
@@ -512,6 +547,16 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       );
     } catch (e) {
       print('Erro ao exibir preview da câmera: $e');
+      // Se pegar uma exceção relacionada a câmera descartada, mostrar mensagem apropriada
+      if (e.toString().contains('Disposed CameraController')) {
+        return Center(
+          child: Text(
+            'Câmera não disponível.\nTrocando de abas...',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.orange),
+          ),
+        );
+      }
       return Center(
         child: Text(
           'Erro ao exibir câmera: $e',

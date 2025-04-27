@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/connectivity/connectivity_bloc.dart';
 import '../../../bloc/registro/registro_bloc.dart';
@@ -27,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _indiceAbaSelecionada = widget.index;
     // Carregar registros quando a tela for inicializada
     context.read<RegistroBloc>().add(CarregarRegistros());
+    solicitarPermissaoCamera();
   }
 
   @override
@@ -38,13 +40,52 @@ class _HomeScreenState extends State<HomeScreen> {
     if (authState is Autenticado) {
       final usuario = authState.usuario;
 
-      // Inicializar telas
+      // Inicializar telas com base no índice atual
       _telas.clear();
       _telas.addAll([
         MeusRegistrosScreen(usuarioId: usuario.id!),
-        NovoRegistroScreen(usuarioId: usuario.id!, usuarioNome: usuario.nome),
+        NovoRegistroScreen(
+          usuarioId: usuario.id!,
+          usuarioNome: usuario.nome,
+          isVisible:
+              _indiceAbaSelecionada ==
+              1, // Verifica se esta aba está selecionada
+        ),
         const MapaIrregularidadesScreen(),
       ]);
+    }
+  }
+
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    // Atualizar as telas quando o índice mudar
+    if (_telas.length > 1 && _telas[1] is NovoRegistroScreen) {
+      // Recriar a tela de registro com a visibilidade atualizada
+      final authState = context.read<AuthBloc>().state;
+      if (authState is Autenticado) {
+        final usuario = authState.usuario;
+        _telas[1] = NovoRegistroScreen(
+          usuarioId: usuario.id!,
+          usuarioNome: usuario.nome,
+          isVisible: _indiceAbaSelecionada == 1,
+        );
+      }
+    }
+  }
+
+  Future<bool> solicitarPermissaoCamera() async {
+    // Solicita a permissão de câmera
+    PermissionStatus status = await Permission.camera.request();
+    await Permission.location.request();
+    if (status.isGranted) {
+      return true;
+    } else if (status.isPermanentlyDenied) {
+      await openAppSettings();
+      return false;
+    } else {
+      // Permissão negada (não permanentemente)
+      return false;
     }
   }
 

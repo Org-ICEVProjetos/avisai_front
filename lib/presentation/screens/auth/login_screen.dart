@@ -2,9 +2,8 @@ import 'package:avisai4/presentation/screens/home/onboarding_screen.dart';
 import 'package:avisai4/presentation/screens/widgets/tutorial_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_multi_formatter/formatters/masked_input_formatter.dart';
 import '../../../bloc/auth/auth_bloc.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_input.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
@@ -16,17 +15,99 @@ class LoginScreen extends StatefulWidget {
   _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  final _cpfFieldKey = GlobalKey<FormFieldState>();
+  final _senhaFieldKey = GlobalKey<FormFieldState>();
   final _formKey = GlobalKey<FormState>();
   final _cpfController = TextEditingController();
   final _senhaController = TextEditingController();
   bool _carregando = false;
   bool _mostrarSenha = false;
 
+  // Animation controllers
+  late AnimationController _animationController;
+  late Animation<double> _fadeInAnimation;
+  late Animation<Offset> _slideImageAnimation;
+  late Animation<Offset> _slideTitleAnimation;
+  late Animation<Offset> _slideSubtitleAnimation;
+  late Animation<Offset> _slideFormAnimation;
+  late Animation<double> _fadeInButtonAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideImageAnimation = Tween<Offset>(
+      begin: const Offset(0, -0.5),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.1, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideTitleAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.3, 0.7, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideSubtitleAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.4, 0.8, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideFormAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.5, 0.9, curve: Curves.easeOut),
+      ),
+    );
+
+    _fadeInButtonAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.7, 1.0, curve: Curves.easeOut),
+      ),
+    );
+
+    // Start animation after short delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _animationController.forward();
+    });
+  }
+
   @override
   void dispose() {
     _cpfController.dispose();
     _senhaController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -70,14 +151,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Calcular o tamanho da imagem (90% da largura, 40% da altura, máximo 400px)
+    final Size screenSize = MediaQuery.of(context).size;
+    final double imageWidth =
+        screenSize.width * 0.9 < 400 ? screenSize.width * 0.9 : 400.0;
+    final double imageHeight =
+        screenSize.height * 0.35 < 400 ? screenSize.height * 0.35 : 400.0;
+
+    final theme = Theme.of(context);
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthErro) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.mensagem),
-                backgroundColor: Colors.red,
+                backgroundColor: theme.colorScheme.error,
               ),
             );
             setState(() {
@@ -90,127 +181,331 @@ class _LoginScreenState extends State<LoginScreen> {
         },
         builder: (context, state) {
           return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Center(
-                child: SingleChildScrollView(
+            child: FadeTransition(
+              opacity: _fadeInAnimation,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Logo e título
-                      Icon(
-                        Icons.report_problem,
-                        size: 80,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Avisaí',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Ajude a melhorar sua cidade',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 20),
 
-                      // Formulário de login
-                      Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            CustomInput(
-                              controller: _cpfController,
-                              label: 'CPF',
-                              hint: 'Digite seu CPF',
-                              prefixIcon: Icons.person,
-                              keyboardType: TextInputType.number,
-                              validator: _validarCPF,
-                              autovalidateMode:
-                                  AutovalidateMode.onUserInteraction,
-                              inputFormatters: const [],
-                            ),
-                            const SizedBox(height: 16),
-                            CustomInput(
-                              controller: _senhaController,
-                              label: 'Senha',
-                              hint: 'Digite sua senha',
-                              prefixIcon: Icons.lock,
-                              obscureText: !_mostrarSenha,
-                              validator: _validarSenha,
-                              autovalidateMode:
-                                  AutovalidateMode.onUserInteraction,
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _mostrarSenha
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _mostrarSenha = !_mostrarSenha;
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            // Esqueceu a senha
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) =>
-                                              const ForgotPasswordScreen(),
+                      // Imagem principal - ilustração de login com animação
+                      SlideTransition(
+                        position: _slideImageAnimation,
+                        child: Center(
+                          child: SizedBox(
+                            width: imageWidth,
+                            height: imageHeight,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12.0),
+                              child: Image.asset(
+                                'assets/images/login.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: imageWidth,
+                                    height: imageHeight,
+                                    decoration: BoxDecoration(
+                                      color: theme.primaryColorLight,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      size: 80,
+                                      color: theme.primaryColorDark,
                                     ),
                                   );
                                 },
-                                child: const Text('Esqueceu a senha?'),
                               ),
                             ),
-                            const SizedBox(height: 24),
+                          ),
+                        ),
+                      ),
 
-                            // Botão de login
-                            _carregando
-                                ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                                : CustomButton(
-                                  texto: 'Entrar',
-                                  onPressed: _fazerLogin,
-                                  icone: Icons.login,
+                      const SizedBox(height: 20),
+
+                      // Título "Login" com animação
+                      SlideTransition(
+                        position: _slideTitleAnimation,
+                        child: Text(
+                          'Login',
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            color: theme.primaryColor,
+                            fontSize: 38,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+
+                      // Subtítulo com animação
+                      SlideTransition(
+                        position: _slideSubtitleAnimation,
+                        child: Text(
+                          'Seja bem-vindo(a) de volta!',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: Colors.grey[800],
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // Formulário com animação
+                      SlideTransition(
+                        position: _slideFormAnimation,
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              // Campo CPF
+                              Material(
+                                elevation: 5,
+                                borderRadius: BorderRadius.circular(30),
+                                shadowColor: Colors.black.withOpacity(0.4),
+                                color: Colors.white,
+                                child: TextFormField(
+                                  key: _cpfFieldKey,
+                                  controller: _cpfController,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    MaskedInputFormatter('000.000.000-00'),
+                                  ],
+                                  style: theme.textTheme.bodyLarge,
+                                  decoration: InputDecoration(
+                                    labelText: 'CPF',
+                                    labelStyle: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[500],
+                                    ),
+                                    hintText: 'Digite seu CPF',
+                                    hintStyle: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                  validator: _validarCPF,
+                                  autovalidateMode:
+                                      AutovalidateMode.onUserInteraction,
                                 ),
-                            const SizedBox(height: 24),
-
-                            // Registro
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text('Não tem conta?'),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) => const RegisterScreen(),
+                              ),
+                              Builder(
+                                builder: (context) {
+                                  final errorText =
+                                      _cpfFieldKey.currentState?.errorText;
+                                  if (errorText != null &&
+                                      errorText.isNotEmpty) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 12.0,
+                                        top: 4.0,
+                                      ),
+                                      child: Text(
+                                        errorText,
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     );
-                                  },
-                                  child: const Text('Cadastre-se'),
+                                  } else {
+                                    return SizedBox.shrink();
+                                  }
+                                },
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // SENHA
+                              Material(
+                                elevation: 5,
+                                borderRadius: BorderRadius.circular(30),
+                                shadowColor: Colors.black.withOpacity(0.4),
+                                color: Colors.white,
+                                child: TextFormField(
+                                  key: _senhaFieldKey,
+                                  controller: _senhaController,
+                                  obscureText: !_mostrarSenha,
+                                  style: theme.textTheme.bodyLarge,
+                                  decoration: InputDecoration(
+                                    labelText: 'Senha',
+                                    labelStyle: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[500],
+                                    ),
+                                    hintText: 'Digite sua senha',
+                                    hintStyle: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[500],
+                                    ),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _mostrarSenha
+                                            ? Icons.visibility_off
+                                            : Icons.visibility,
+                                        color: Colors.grey[700],
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _mostrarSenha = !_mostrarSenha;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  validator: _validarSenha,
+                                  autovalidateMode:
+                                      AutovalidateMode.onUserInteraction,
                                 ),
-                              ],
+                              ),
+                              Builder(
+                                builder: (context) {
+                                  final errorText =
+                                      _senhaFieldKey.currentState?.errorText;
+                                  if (errorText != null &&
+                                      errorText.isNotEmpty) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 12.0,
+                                        top: 4.0,
+                                      ),
+                                      child: Text(
+                                        errorText,
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    return SizedBox.shrink();
+                                  }
+                                },
+                              ),
+
+                              // Link "Esqueceu a senha" (incluído no form animation)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    right: 8.0,
+                                    top: 8.0,
+                                  ),
+                                  child: TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) =>
+                                                  const ForgotPasswordScreen(),
+                                        ),
+                                      );
+                                    },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: theme.primaryColor,
+                                    ),
+                                    child: Text(
+                                      'Esqueceu a senha?',
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(color: Colors.grey[800]),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Botão Entrar com fade-in animation
+                      FadeTransition(
+                        opacity: _fadeInButtonAnimation,
+                        child: SizedBox(
+                          height: 60,
+                          child:
+                              _carregando
+                                  ? Center(
+                                    child: CircularProgressIndicator(
+                                      color: theme.primaryColor,
+                                    ),
+                                  )
+                                  : ElevatedButton(
+                                    onPressed: _fazerLogin,
+                                    style: theme.elevatedButtonTheme.style
+                                        ?.copyWith(
+                                          shape: WidgetStateProperty.all<
+                                            RoundedRectangleBorder
+                                          >(
+                                            RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(30.0),
+                                            ),
+                                          ),
+                                          padding: WidgetStateProperty.all<
+                                            EdgeInsets
+                                          >(
+                                            const EdgeInsets.symmetric(
+                                              vertical: 16,
+                                            ),
+                                          ),
+                                        ),
+                                    child: Text(
+                                      'Entrar',
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                  ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // Link para cadastro também com fade-in animation
+                      FadeTransition(
+                        opacity: _fadeInButtonAnimation,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Não tem uma conta?',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey[500],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => const RegisterScreen(),
+                                  ),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: theme.primaryColor,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                minimumSize: const Size(50, 30),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                'Cadastre-se',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ],
                         ),

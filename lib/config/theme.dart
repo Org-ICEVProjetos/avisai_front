@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 ThemeData appTheme() {
   return ThemeData(
-    primaryColor: const Color(0xFF3F51B5),
+    primaryColor: const Color(0xFF022865),
     primaryColorDark: const Color(0xFF303F9F),
     primaryColorLight: const Color(0xFFC5CAE9),
     colorScheme: ColorScheme.fromSwatch().copyWith(
@@ -13,109 +13,131 @@ ThemeData appTheme() {
     scaffoldBackgroundColor: Colors.white,
     cardColor: Colors.white,
 
-    fontFamily: 'Roboto',
+    // Usando a fonte Inter local
+    fontFamily: 'Inter',
     textTheme: const TextTheme(
       displayLarge: TextStyle(
         fontSize: 96,
         fontWeight: FontWeight.w300,
         color: Colors.black87,
+        fontFamily: 'Inter',
       ),
       displayMedium: TextStyle(
         fontSize: 60,
         fontWeight: FontWeight.w300,
         color: Colors.black87,
+        fontFamily: 'Inter',
       ),
       displaySmall: TextStyle(
         fontSize: 48,
         fontWeight: FontWeight.w400,
         color: Colors.black87,
+        fontFamily: 'Inter',
       ),
       headlineMedium: TextStyle(
         fontSize: 34,
         fontWeight: FontWeight.w400,
         color: Colors.black87,
+        fontFamily: 'Inter',
       ),
       headlineSmall: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.w400,
         color: Colors.black87,
+        fontFamily: 'Inter',
       ),
       titleLarge: TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.w500,
         color: Colors.black87,
+        fontFamily: 'Inter',
       ),
       titleMedium: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w400,
         color: Colors.black87,
+        fontFamily: 'Inter',
       ),
       titleSmall: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
         color: Colors.black87,
+        fontFamily: 'Inter',
       ),
       bodyLarge: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w400,
         color: Colors.black87,
+        fontFamily: 'Inter',
       ),
       bodyMedium: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: Colors.black87,
+        fontFamily: 'Inter',
       ),
       labelLarge: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
         color: Colors.white,
+        fontFamily: 'Inter',
       ),
       bodySmall: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w400,
         color: Colors.black54,
+        fontFamily: 'Inter',
       ),
       labelSmall: TextStyle(
         fontSize: 10,
         fontWeight: FontWeight.w400,
         color: Colors.black54,
+        fontFamily: 'Inter',
       ),
     ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        borderRadius: BorderRadius.circular(30),
+        borderSide: BorderSide.none, // Sem borda
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        borderRadius: BorderRadius.circular(30),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: const BorderSide(color: Color(0xFF3F51B5), width: 2.0),
+        borderRadius: BorderRadius.circular(30),
+        borderSide: BorderSide.none,
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 1.0),
+        borderRadius: BorderRadius.circular(30),
+        borderSide: BorderSide.none,
       ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16.0,
-        vertical: 16.0,
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: BorderSide.none,
       ),
-      labelStyle: const TextStyle(color: Colors.black54),
-      hintStyle: const TextStyle(color: Colors.black38),
+      errorStyle: TextStyle(height: 0, fontSize: 0),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      labelStyle: const TextStyle(color: Colors.black54, fontFamily: 'Inter'),
+      hintStyle: const TextStyle(color: Colors.black38, fontFamily: 'Inter'),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         foregroundColor: Colors.white,
-        backgroundColor: const Color(0xFF3F51B5),
+        backgroundColor: const Color(0xFF022865),
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         elevation: 2,
+        textStyle: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     ),
 
@@ -130,18 +152,39 @@ ThemeData appTheme() {
       foregroundColor: Colors.white,
       elevation: 2,
       centerTitle: true,
+      titleTextStyle: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 20,
+        fontWeight: FontWeight.w500,
+        color: Colors.white,
+      ),
     ),
 
     tabBarTheme: const TabBarTheme(
       labelColor: Colors.white,
       unselectedLabelColor: Colors.white70,
       indicatorSize: TabBarIndicatorSize.tab,
+      labelStyle: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+      unselectedLabelStyle: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+      ),
     ),
 
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: const Color(0xFF323232),
-      contentTextStyle: const TextStyle(color: Colors.white),
+      contentTextStyle: const TextStyle(
+        fontFamily: 'Inter',
+        color: Colors.white,
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.0)),
     ),
 
