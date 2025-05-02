@@ -194,12 +194,12 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
       final quantidadeSincronizada =
           await _registroRepository.sincronizarRegistrosPendentes();
 
-      emit(
-        RegistroOperacaoSucesso(
-          mensagem:
-              'Sincronização concluída: $quantidadeSincronizada registros sincronizados.',
-        ),
-      );
+      // emit(
+      //   RegistroOperacaoSucesso(
+      //     mensagem:
+      //         'Sincronização concluída: $quantidadeSincronizada registros sincronizados.',
+      //   ),
+      // );
 
       final registros = await _registroRepository.obterTodosRegistros();
       emit(

@@ -91,13 +91,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return WillPopScope(
-          onWillPop: () async => false, // Impedir voltar
+        // Get screen size
+        final Size screenSize = MediaQuery.of(context).size;
+        final double screenWidth = screenSize.width;
+        final double screenHeight = screenSize.height;
+
+        // Calculate responsive sizes
+        final double iconSize = screenWidth * 0.12; // 12% of screen width
+        final double titleFontSize = screenWidth * 0.05; // 5% of screen width
+        final double bodyFontSize = screenWidth * 0.04; // 4% of screen width
+        final double buttonHeight = screenHeight * 0.06; // 6% of screen height
+
+        return PopScope(
+          canPop: false,
           child: AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(
+                screenWidth * 0.04,
+              ), // Responsive border radius
             ),
-            contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            contentPadding: EdgeInsets.fromLTRB(
+              screenWidth * 0.06, // Left padding
+              screenHeight * 0.03, // Top padding
+              screenWidth * 0.06, // Right padding
+              0, // Bottom padding
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,12 +124,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    const Icon(Icons.folder, color: Colors.orange, size: 48),
-                    // SizedBox(width: 10),
-                    const Text(
+                    Icon(Icons.folder, color: Colors.orange, size: iconSize),
+                    Text(
                       'Permissão de acesso',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: titleFontSize,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                         fontFamily: 'Inter',
@@ -120,19 +137,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ],
                 ),
 
-                // Título
-                const SizedBox(height: 16),
-
+                SizedBox(height: screenHeight * 0.02), // Responsive spacing
                 // Corpo do texto
-                const Text.rich(
+                Text.rich(
                   TextSpan(
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: bodyFontSize,
                       color: Colors.black87,
                       fontFamily: 'Inter',
                       height: 1.5,
                     ),
-                    children: [
+                    children: const [
                       TextSpan(
                         text:
                             'Para uma melhor experiência, é necessário permitir o acesso à ',
@@ -154,40 +169,50 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       TextSpan(text: ' do seu dispositivo.'),
                     ],
                   ),
-                  textAlign: TextAlign.left,
+                  textAlign: TextAlign.justify,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: screenHeight * 0.03), // Responsive spacing
               ],
             ),
-            actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            actionsPadding: EdgeInsets.fromLTRB(
+              screenWidth * 0.06, // Left padding
+              0, // Top padding
+              screenWidth * 0.06, // Right padding
+              screenHeight * 0.03, // Bottom padding
+            ),
             actions: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    // Delay para abrir a solicitação de permissões
-                    Future.delayed(const Duration(milliseconds: 100), () {
-                      if (mounted) {
-                        _solicitarPermissoes();
-                      }
-                      // Marcar que o tutorial já foi mostrado
-                      _salvarTutorialMostrado();
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF022865),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Delay para abrir a solicitação de permissões
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    if (mounted) {
+                      _solicitarPermissoes();
+                    }
+                    // Marcar que o tutorial já foi mostrado
+                    _salvarTutorialMostrado();
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF022865),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      screenWidth * 0.08,
+                    ), // Responsive border radius
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: const Text(
-                      'Continuar',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Inter',
-                      ),
+                  minimumSize: Size(
+                    double.infinity,
+                    buttonHeight, // Responsive button height
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                  child: Text(
+                    'Continuar',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Inter',
+                      fontSize: bodyFontSize, // Responsive text size for button
                     ),
                   ),
                 ),
@@ -200,18 +225,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _solicitarPermissoes() async {
-    // Solicitar permissão da câmera
-    PermissionStatus cameraStatus = await Permission.camera.request();
+    try {
+      // Solicitar permissões com timeout para evitar travamentos
+      PermissionStatus cameraStatus = await Permission.camera.request().timeout(
+        Duration(seconds: 5),
+        onTimeout: () => PermissionStatus.denied,
+      );
 
-    // Solicitar permissão de localização
-    PermissionStatus locationStatus = await Permission.location.request();
+      PermissionStatus locationStatus = await Permission.location
+          .request()
+          .timeout(
+            Duration(seconds: 5),
+            onTimeout: () => PermissionStatus.denied,
+          );
 
-    if (mounted) {
-      // Verificar se alguma permissão foi negada permanentemente
+      if (!mounted) return;
+
       await _verificarPermissoesNegadasPermanentemente();
-
-      // Navegar para a Home independentemente do resultado das permissões
       _navegarParaHome();
+    } catch (e) {
+      print("Erro ao solicitar permissões: $e");
+      if (mounted) _navegarParaHome(); // Garantir navegação mesmo com erro
     }
   }
 
@@ -226,33 +260,123 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         showDialog(
           context: context,
           builder: (BuildContext context) {
+            // Get screen size
+            final Size screenSize = MediaQuery.of(context).size;
+            final double screenWidth = screenSize.width;
+            final double screenHeight = screenSize.height;
+
+            // Calculate responsive sizes
+            final double iconSize = screenWidth * 0.12; // 12% of screen width
+            final double titleFontSize =
+                screenWidth * 0.05; // 5% of screen width
+            final double bodyFontSize =
+                screenWidth * 0.04; // 4% of screen width
+            final double buttonHeight =
+                screenHeight * 0.06; // 6% of screen height
+
             return AlertDialog(
-              title: const Text('Permissões necessárias'),
-              content: const Text(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  screenWidth * 0.04,
+                ), // Responsive border radius
+              ),
+              contentPadding: EdgeInsets.fromLTRB(
+                screenWidth * 0.06, // Left padding
+                screenHeight * 0.03, // Top padding
+                screenWidth * 0.06, // Right padding
+                screenHeight * 0.02, // Bottom padding
+              ),
+              title: Text(
+                'Permissões necessárias',
+                style: TextStyle(
+                  fontSize: titleFontSize,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                  fontFamily: 'Inter',
+                ),
+                textAlign: TextAlign.center,
+              ),
+              content: Text(
                 'Algumas permissões necessárias foram negadas permanentemente. '
                 'Para utilizar todas as funcionalidades do aplicativo, por favor, '
                 'vá até as configurações do seu dispositivo e habilite as permissões solicitadas.\n\n'
                 'Após habilitar as permissões, reinicie o aplicativo para que as alterações tenham efeito.',
+                style: TextStyle(
+                  fontSize: bodyFontSize,
+                  color: Colors.black87,
+                  fontFamily: 'Inter',
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+              actionsPadding: EdgeInsets.fromLTRB(
+                screenWidth * 0.06, // Left padding
+                0, // Top padding
+                screenWidth * 0.06, // Right padding
+                screenHeight * 0.03, // Bottom padding
               ),
               actions: [
-                TextButton(
-                  child: const Text('Cancelar'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _navegarParaHome();
-                  },
-                ),
-                TextButton(
-                  child: const Text('Abrir configurações'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    openAppSettings();
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      if (mounted) {
+                // Layout de coluna para os botões ocuparem toda a largura
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Botão principal "Abrir configurações"
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        openAppSettings();
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          if (mounted) {
+                            _navegarParaHome();
+                          }
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF022865),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.08,
+                          ),
+                        ),
+                        minimumSize: Size(double.infinity, buttonHeight),
+                      ),
+                      child: Text(
+                        'Abrir configurações',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Inter',
+                          fontSize: bodyFontSize,
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(
+                      height: screenHeight * 0.01,
+                    ), // Espaçamento entre botões
+                    // Botão secundário "Cancelar"
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
                         _navegarParaHome();
-                      }
-                    });
-                  },
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.grey[700],
+                        minimumSize: Size(
+                          double.infinity,
+                          buttonHeight *
+                              0.8, // Ligeiramente menor que o botão principal
+                        ),
+                      ),
+                      child: Text(
+                        'Cancelar',
+                        style: TextStyle(
+                          fontSize: bodyFontSize,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             );
@@ -265,15 +389,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _navegarParaHome() {
-    // Salvar que as permissões já foram solicitadas
-    _salvarPermissoesSolicitadas();
-
-    // Navegar para a tela Home
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomeScreen(index: 1)),
-      );
-    }
+    _salvarPermissoesSolicitadas().then((_) {
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomeScreen(index: 1)),
+        );
+      } else if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen(index: 1)),
+          (route) => false,
+        );
+      }
+    });
   }
 
   Future<void> _salvarPermissoesSolicitadas() async {
@@ -335,15 +463,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             height: 60,
                             margin: const EdgeInsets.only(right: 8),
                             decoration: BoxDecoration(
-                              color: Colors.blue[100],
+                              color: Colors.blue[200],
                               shape: BoxShape.circle,
 
-                              border: Border.all(color: Colors.blue, width: 2),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1.5,
+                              ),
                             ),
 
                             child: IconButton(
-                              icon: const Icon(Icons.arrow_back),
-                              iconSize: 30,
+                              icon: const Icon(Icons.arrow_back_rounded),
+                              iconSize: 35,
                               color: const Color(0xFF022865),
                               onPressed: _previousPage,
                               padding: EdgeInsets.zero,
@@ -360,8 +491,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_forward),
-                          iconSize: 30,
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                          iconSize: 35,
                           color: Colors.white,
                           onPressed: _nextPage,
                           padding: EdgeInsets.zero,
@@ -467,7 +598,7 @@ class OnboardingPage extends StatelessWidget {
           TextSpan(text: data.title),
           TextSpan(
             text: data.titleHighlight,
-            style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+            style: TextStyle(color: Theme.of(context).colorScheme.primary),
           ),
           TextSpan(text: data.titleEnd),
         ],
@@ -492,7 +623,10 @@ class OnboardingPage extends StatelessWidget {
             text: data.title,
             style: const TextStyle(color: Colors.black87),
           ),
-          TextSpan(text: 'Avis', style: TextStyle(color: primaryColor)),
+          TextSpan(
+            text: 'Avis',
+            style: TextStyle(color: Theme.of(context).colorScheme.primary),
+          ),
           TextSpan(text: 'aí', style: TextStyle(color: secondaryColor)),
           TextSpan(
             text: data.titleEnd,
@@ -538,7 +672,7 @@ class OnboardingPage extends StatelessWidget {
             TextSpan(
               text: 'prefeitura',
               style: TextStyle(
-                color: primaryColor,
+                color: Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -564,7 +698,7 @@ class OnboardingPage extends StatelessWidget {
             TextSpan(
               text: 'segura',
               style: TextStyle(
-                color: primaryColor,
+                color: Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -572,7 +706,7 @@ class OnboardingPage extends StatelessWidget {
             TextSpan(
               text: 'limpa',
               style: TextStyle(
-                color: primaryColor,
+                color: Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -580,7 +714,7 @@ class OnboardingPage extends StatelessWidget {
             TextSpan(
               text: 'bem cuidada',
               style: TextStyle(
-                color: primaryColor,
+                color: Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),

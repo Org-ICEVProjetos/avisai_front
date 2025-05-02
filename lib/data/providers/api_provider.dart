@@ -31,7 +31,7 @@ class ApiProvider {
       final response = await http.post(
         url,
         headers: headers,
-        body: jsonEncode({'cpf': cpf, 'senha': senha}),
+        body: jsonEncode({'cpf': cpf, 'password': senha}),
       );
 
       if (response.statusCode == 200) {
@@ -41,7 +41,7 @@ class ApiProvider {
         // Configurar o token para as próximas requisições
         configurarToken(token);
 
-        return {'usuario': Usuario.fromJson(dados['usuario']), 'token': token};
+        return {'usuario': Usuario.fromJson(dados['user']), 'token': token};
       } else {
         final erro = jsonDecode(response.body);
         throw ApiException(
@@ -59,19 +59,21 @@ class ApiProvider {
     Usuario usuario,
     String senha,
   ) async {
-    final url = Uri.parse('$baseUrl/auth/registrar');
+    final url = Uri.parse('$baseUrl/auth/register');
 
     try {
       final response = await http.post(
         url,
         headers: headers,
         body: jsonEncode({
-          'nome': usuario.nome,
+          'name': usuario.nome,
           'cpf': usuario.cpf,
           'email': usuario.email,
-          'senha': senha,
+          'password': senha,
         }),
       );
+      print('Status: ${response.statusCode}');
+      print('Body: "${response.body}"');
 
       if (response.statusCode == 201) {
         final dados = jsonDecode(response.body);
@@ -79,23 +81,30 @@ class ApiProvider {
 
         // Configurar o token para as próximas requisições
         configurarToken(token);
-
-        return {'usuario': Usuario.fromJson(dados['usuario']), 'token': token};
+        return {'usuario': Usuario.fromJson(dados['user']), 'token': token};
       } else {
-        final erro = jsonDecode(response.body);
-        throw ApiException(
-          erro['mensagem'] ?? 'Erro ao registrar usuário',
-          statusCode: response.statusCode,
-        );
+        if (response.body.isNotEmpty) {
+          final erro = jsonDecode(response.body);
+          throw ApiException(
+            erro['mensagem'] ?? 'Erro ao registrar usuário',
+            statusCode: response.statusCode,
+          );
+        } else {
+          throw ApiException(
+            'Erro ao registrar usuário. Resposta vazia.',
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
+      print(e.toString());
       if (e is ApiException) rethrow;
       throw ApiException('Erro de conexão: ${e.toString()}');
     }
   }
 
   Future<bool> recuperarSenha(String cpf, String email) async {
-    final url = Uri.parse('$baseUrl/auth/recuperar-senha');
+    final url = Uri.parse('$baseUrl/password/forgot');
 
     try {
       final response = await http.post(
@@ -120,7 +129,7 @@ class ApiProvider {
   }
 
   Future<Registro> enviarRegistro(Registro registro) async {
-    final url = Uri.parse('$baseUrl/registros');
+    final url = Uri.parse('$baseUrl/porthole-reports/create');
 
     try {
       // Criar o objeto de dados para enviar
@@ -154,7 +163,7 @@ class ApiProvider {
   }
 
   Future<List<Registro>> obterRegistros() async {
-    final url = Uri.parse('$baseUrl/registros');
+    final url = Uri.parse('$baseUrl/porthole-reports');
 
     try {
       final response = await http.get(url, headers: headers);
@@ -176,7 +185,7 @@ class ApiProvider {
   }
 
   Future<bool> removerRegistro(String registroId) async {
-    final url = Uri.parse('$baseUrl/registros/$registroId');
+    final url = Uri.parse('$baseUrl/porthole-reports/$registroId');
 
     try {
       final response = await http.delete(url, headers: headers);
@@ -187,35 +196,6 @@ class ApiProvider {
         final erro = jsonDecode(response.body);
         throw ApiException(
           erro['mensagem'] ?? 'Erro ao remover registro',
-          statusCode: response.statusCode,
-        );
-      }
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException('Erro de conexão: ${e.toString()}');
-    }
-  }
-
-  Future<Registro> validarRegistro(
-    String registroId,
-    String validadorId,
-  ) async {
-    final url = Uri.parse('$baseUrl/registros/$registroId/validar');
-
-    try {
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: jsonEncode({'validadorId': validadorId}),
-      );
-
-      if (response.statusCode == 200) {
-        final dados = jsonDecode(response.body);
-        return Registro.fromJson(dados);
-      } else {
-        final erro = jsonDecode(response.body);
-        throw ApiException(
-          erro['mensagem'] ?? 'Erro ao validar registro',
           statusCode: response.statusCode,
         );
       }

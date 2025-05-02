@@ -1,11 +1,11 @@
+import 'package:avisai4/bloc/connectivity/connectivity_bloc.dart';
 import 'package:avisai4/presentation/screens/mapa/detalhes_registro_screen.dart';
+import 'package:avisai4/presentation/screens/widgets/registro_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../bloc/registro/registro_bloc.dart';
 import '../../../data/models/registro.dart';
-
-import '../widgets/registro_card.dart';
 
 class MeusRegistrosScreen extends StatefulWidget {
   final String usuarioId;
@@ -83,11 +83,9 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
           (context) => StatefulBuilder(
             builder: (context, setStateModal) {
               return Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                  left: 16,
-                  right: 16,
-                  top: 16,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,6 +95,10 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.close, size: 24),
+                        ),
                         const Text(
                           'Filtro',
                           style: TextStyle(
@@ -104,28 +106,27 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                        ),
+                        // Espaço vazio para centralizar o título
+                        const SizedBox(width: 24),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
                     // Classificação da irregularidade
                     const Text(
                       'Classificação da irregularidade:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
 
-                    // Opção "Todas as opções"
-                    CheckboxListTile(
-                      title: const Text('Todas as opções'),
-                      value: _filtroCategoria == null,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) {
+                    // Opções de classificação com checkboxes
+                    _buildCheckboxOption(
+                      'Todas as opções',
+                      _filtroCategoria == null,
+                      (value) {
                         setStateModal(() {
                           if (value == true) {
                             _filtroCategoria = null;
@@ -134,13 +135,10 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                       },
                     ),
 
-                    // Opção "Buracos na pista"
-                    CheckboxListTile(
-                      title: const Text('Buracos na pista'),
-                      value: _filtroCategoria == CategoriaIrregularidade.buraco,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) {
+                    _buildCheckboxOption(
+                      'Buracos na pista',
+                      _filtroCategoria == CategoriaIrregularidade.buraco,
+                      (value) {
                         setStateModal(() {
                           if (value == true) {
                             _filtroCategoria = CategoriaIrregularidade.buraco;
@@ -152,15 +150,11 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                       },
                     ),
 
-                    // Opção "Poste sem iluminação"
-                    CheckboxListTile(
-                      title: const Text('Poste sem iluminação'),
-                      value:
-                          _filtroCategoria ==
+                    _buildCheckboxOption(
+                      'Poste sem iluminação',
+                      _filtroCategoria ==
                           CategoriaIrregularidade.posteDefeituoso,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) {
+                      (value) {
                         setStateModal(() {
                           if (value == true) {
                             _filtroCategoria =
@@ -173,15 +167,10 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                       },
                     ),
 
-                    // Opção "Descarte irregular de lixo"
-                    CheckboxListTile(
-                      title: const Text('Descarte irregular de lixo'),
-                      value:
-                          _filtroCategoria ==
-                          CategoriaIrregularidade.lixoIrregular,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) {
+                    _buildCheckboxOption(
+                      'Descarte irregular de lixo',
+                      _filtroCategoria == CategoriaIrregularidade.lixoIrregular,
+                      (value) {
                         setStateModal(() {
                           if (value == true) {
                             _filtroCategoria =
@@ -194,77 +183,70 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                       },
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
+
+                    // Status do registro
                     const Text(
                       'Status do registro:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
 
-                    // Status options as choice chips
-                    Wrap(
-                      spacing: 8,
+                    // Botões de status
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        ChoiceChip(
-                          label: const Text('Pendente'),
-                          selected: _filtroStatus == StatusValidacao.pendente,
-                          onSelected: (selected) {
-                            setStateModal(() {
-                              _filtroStatus =
-                                  selected ? StatusValidacao.pendente : null;
-                            });
-                          },
+                        _buildStatusButton(
+                          'Pendente',
+                          StatusValidacao.pendente,
+                          setStateModal,
                         ),
-                        ChoiceChip(
-                          label: const Text('Aceito'),
-                          selected: _filtroStatus == StatusValidacao.validado,
-                          onSelected: (selected) {
-                            setStateModal(() {
-                              _filtroStatus =
-                                  selected ? StatusValidacao.validado : null;
-                            });
-                          },
+                        const SizedBox(width: 8),
+                        _buildStatusButton(
+                          'Aceito',
+                          StatusValidacao.validado,
+                          setStateModal,
                         ),
-                        ChoiceChip(
-                          label: const Text('Recusado'),
-                          selected:
-                              _filtroStatus == StatusValidacao.naoValidado,
-                          onSelected: (selected) {
-                            setStateModal(() {
-                              _filtroStatus =
-                                  selected ? StatusValidacao.naoValidado : null;
-                            });
-                          },
+                        const SizedBox(width: 8),
+                        _buildStatusButton(
+                          'Recusado',
+                          StatusValidacao.naoValidado,
+                          setStateModal,
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
-                    // Botão para aplicar o filtro
+                    // Botão Aplicar Filtro
                     SizedBox(
                       width: double.infinity,
+                      height: 48,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
                         onPressed: () {
-                          // Aplicar filtros e fechar o modal
                           setState(() {}); // Atualiza a UI principal
                           Navigator.pop(context);
                         },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF002569),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 0,
+                        ),
                         child: const Text(
                           'Aplicar Filtro',
-                          style: TextStyle(fontSize: 16),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -274,13 +256,82 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
     );
   }
 
-  // Limpa todos os filtros aplicados
-  void _limparFiltros() {
-    setState(() {
-      _filtroStatus = null;
-      _filtroCategoria = null;
-      _apenasNaoSincronizados = false;
-    });
+  // Widget para construir uma opção de checkbox
+  Widget _buildCheckboxOption(
+    String text,
+    bool checked,
+    Function(bool?) onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: Checkbox(
+              value: checked,
+              onChanged: onChanged,
+              activeColor: const Color(0xFF002569),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(text, style: const TextStyle(fontSize: 16)),
+        ],
+      ),
+    );
+  }
+
+  // Widget para construir um botão de status
+  Widget _buildStatusButton(
+    String text,
+    StatusValidacao status,
+    StateSetter setStateModal,
+  ) {
+    final bool isSelecionado = _filtroStatus == status;
+
+    return Flexible(
+      fit: FlexFit.loose,
+      child: OutlinedButton(
+        onPressed: () {
+          setStateModal(() {
+            _filtroStatus = isSelecionado ? null : status;
+          });
+        },
+        style: OutlinedButton.styleFrom(
+          backgroundColor:
+              isSelecionado
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.white,
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.2,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          minimumSize: Size(100, 30), // permite o tamanho mínimo possível
+          tapTargetSize:
+              MaterialTapTargetSize.shrinkWrap, // reduz área de toque
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color:
+                isSelecionado
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -291,6 +342,7 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.mensagem),
+              duration: Duration(seconds: 1),
               backgroundColor: Colors.red,
             ),
           );
@@ -299,159 +351,230 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
       builder: (context, state) {
         return Column(
           children: [
+            BlocBuilder<ConnectivityBloc, ConnectivityState>(
+              builder: (context, state) {
+                if (state is ConnectivityDisconnected) {
+                  return Container(
+                    color: Colors.red,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 16,
+                    ),
+                    width: double.infinity,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.wifi_off, color: Colors.white, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Offline',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SizedBox.shrink();
+              },
+            ),
             // Seção de filtros
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              color: Theme.of(context).scaffoldBackgroundColor,
+              padding: const EdgeInsets.all(16),
+              // Fundo cinza claro como na imagem
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Cabeçalho com título e botão de filtro
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'Filtro',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.filter_list,
-                              color: Colors.blue,
-                              size: 20,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: _abrirFiltroAvancado,
-                          ),
-                        ],
-                      ),
-                      // Filtros aplicados? Mostrar botão para limpar
-                      if (_filtroStatus != null ||
-                          _filtroCategoria != null ||
-                          _apenasNaoSincronizados)
-                        TextButton(
-                          onPressed: _limparFiltros,
-                          child: const Text(
-                            'Limpar filtros',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Choice chips para filtro rápido
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
+                  // Título "Filtro" com ícone - ao clicar abre o modal
+                  GestureDetector(
+                    onTap: _abrirFiltroAvancado,
                     child: Row(
                       children: [
-                        // Chip para Pendente
-                        FilterChip(
-                          label: const Text('Pendente'),
-                          selected: _filtroStatus == StatusValidacao.pendente,
-                          onSelected: (selected) {
-                            setState(() {
-                              _filtroStatus =
-                                  selected ? StatusValidacao.pendente : null;
-                            });
-                          },
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(
-                              color:
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo[900],
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.filter_alt,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Filtro',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.indigo[900],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Botões de filtro (Chips)
+                  SingleChildScrollView(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        // Botão Pendente
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _filtroStatus =
+                                    _filtroStatus == StatusValidacao.pendente
+                                        ? null
+                                        : StatusValidacao.pendente;
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor:
                                   _filtroStatus == StatusValidacao.pendente
-                                      ? Theme.of(context).primaryColor
-                                      : Colors.grey.shade300,
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.white,
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 12,
+                              ),
+                              minimumSize: Size(140, 30),
+                              tapTargetSize:
+                                  MaterialTapTargetSize
+                                      .shrinkWrap, // reduz área de toque
+                            ),
+                            child: Text(
+                              'Pendente',
+                              style: TextStyle(
+                                color:
+                                    _filtroStatus == StatusValidacao.pendente
+                                        ? Colors.white
+                                        : Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ),
+
                         const SizedBox(width: 8),
 
-                        // Chip para Aprovado
-                        FilterChip(
-                          label: const Text('Aceito'),
-                          selected: _filtroStatus == StatusValidacao.validado,
-                          onSelected: (selected) {
-                            setState(() {
-                              _filtroStatus =
-                                  selected ? StatusValidacao.validado : null;
-                            });
-                          },
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(
-                              color:
+                        // Botão Aceito
+                        Flexible(
+                          fit: FlexFit.loose,
+
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _filtroStatus =
+                                    _filtroStatus == StatusValidacao.validado
+                                        ? null
+                                        : StatusValidacao.validado;
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor:
                                   _filtroStatus == StatusValidacao.validado
-                                      ? Theme.of(context).primaryColor
-                                      : Colors.grey.shade300,
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.white,
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 12,
+                              ),
+                              minimumSize: Size(140, 30),
+                              tapTargetSize:
+                                  MaterialTapTargetSize
+                                      .shrinkWrap, // reduz área de toque
+                            ),
+                            child: Text(
+                              'Aceito',
+                              style: TextStyle(
+                                color:
+                                    _filtroStatus == StatusValidacao.validado
+                                        ? Colors.white
+                                        : Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ),
+
                         const SizedBox(width: 8),
 
-                        // Chip para Recusado
-                        FilterChip(
-                          label: const Text('Recusado'),
-                          selected:
-                              _filtroStatus == StatusValidacao.naoValidado,
-                          onSelected: (selected) {
-                            setState(() {
-                              _filtroStatus =
-                                  selected ? StatusValidacao.naoValidado : null;
-                            });
-                          },
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(
-                              color:
+                        // Botão Recusado
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _filtroStatus =
+                                    _filtroStatus == StatusValidacao.naoValidado
+                                        ? null
+                                        : StatusValidacao.naoValidado;
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor:
                                   _filtroStatus == StatusValidacao.naoValidado
-                                      ? Theme.of(context).primaryColor
-                                      : Colors.grey.shade300,
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.white,
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 12,
+                              ),
+                              minimumSize: Size(140, 30),
+                              tapTargetSize:
+                                  MaterialTapTargetSize
+                                      .shrinkWrap, // reduz área de toque
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Chip para Não Sincronizado
-                        FilterChip(
-                          label: const Text('Não Sincronizado'),
-                          selected: _apenasNaoSincronizados,
-                          onSelected: (selected) {
-                            setState(() {
-                              _apenasNaoSincronizados = selected;
-                            });
-                          },
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(
-                              color:
-                                  _apenasNaoSincronizados
-                                      ? Theme.of(context).primaryColor
-                                      : Colors.grey.shade300,
+                            child: Text(
+                              'Recusado',
+                              style: TextStyle(
+                                color:
+                                    _filtroStatus == StatusValidacao.naoValidado
+                                        ? Colors.white
+                                        : Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
                 ],
               ),
             ),
-
-            // Divider
-            const Divider(height: 1, thickness: 1),
 
             // Lista de registros
             Expanded(child: _buildRegistrosList(state)),
@@ -531,31 +654,121 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                 // Mostrar diálogo de confirmação
                 showDialog(
                   context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text('Remover registro'),
-                        content: const Text(
-                          'Tem certeza que deseja remover este registro?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Cancelar'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              context.read<RegistroBloc>().add(
-                                RemoverRegistro(registroId: registro.id!),
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
-                            ),
-                            child: const Text('Remover'),
-                          ),
-                        ],
+                  builder: (BuildContext context) {
+                    // Get screen size
+                    final Size screenSize = MediaQuery.of(context).size;
+                    final double screenWidth = screenSize.width;
+                    final double screenHeight = screenSize.height;
+
+                    // Calculate responsive sizes
+                    final double titleFontSize =
+                        screenWidth * 0.05; // 5% of screen width
+                    final double bodyFontSize =
+                        screenWidth * 0.04; // 4% of screen width
+                    final double buttonHeight =
+                        screenHeight * 0.06; // 6% of screen height
+
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.04,
+                        ), // Responsive border radius
                       ),
+                      contentPadding: EdgeInsets.fromLTRB(
+                        screenWidth * 0.06, // Left padding
+                        screenHeight * 0.03, // Top padding
+                        screenWidth * 0.06, // Right padding
+                        screenHeight * 0.02, // Bottom padding
+                      ),
+                      title: Text(
+                        'Remover registro',
+                        style: TextStyle(
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          fontFamily: 'Inter',
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      content: Text(
+                        'Tem certeza que deseja remover este registro?',
+                        style: TextStyle(
+                          fontSize: bodyFontSize,
+                          color: Colors.black87,
+                          fontFamily: 'Inter',
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      actionsPadding: EdgeInsets.fromLTRB(
+                        screenWidth * 0.06, // Left padding
+                        0, // Top padding
+                        screenWidth * 0.06, // Right padding
+                        screenHeight * 0.03, // Bottom padding
+                      ),
+                      actions: [
+                        // Layout de coluna para os botões ocuparem toda a largura
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Botão principal "Remover"
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                context.read<RegistroBloc>().add(
+                                  RemoverRegistro(registroId: registro.id!),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.08,
+                                  ),
+                                ),
+                                minimumSize: Size(
+                                  double.infinity,
+                                  buttonHeight,
+                                ),
+                              ),
+                              child: Text(
+                                'Remover',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Inter',
+                                  fontSize: bodyFontSize,
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(
+                              height: screenHeight * 0.01,
+                            ), // Espaçamento entre botões
+                            // Botão secundário "Cancelar"
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.grey[700],
+                                minimumSize: Size(
+                                  double.infinity,
+                                  buttonHeight *
+                                      0.8, // Ligeiramente menor que o botão principal
+                                ),
+                              ),
+                              child: Text(
+                                'Cancelar',
+                                style: TextStyle(
+                                  fontSize: bodyFontSize,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Inter',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             );

@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:avisai4/bloc/connectivity/connectivity_bloc.dart';
 import 'package:avisai4/data/models/registro.dart';
 import 'package:avisai4/presentation/screens/widgets/custom_button.dart';
-import 'package:avisai4/presentation/screens/widgets/offline_badge.dart';
+
 import 'package:avisai4/presentation/screens/widgets/validation_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -75,6 +76,7 @@ class DetalheRegistroScreen extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Não foi possível abrir o mapa.'),
+          duration: Duration(seconds: 1),
           backgroundColor: Colors.red,
         ),
       );
@@ -90,7 +92,8 @@ class DetalheRegistroScreen extends StatelessWidget {
         content: Text(
           'Funcionalidade de compartilhamento será implementada em breve.',
         ),
-        duration: Duration(seconds: 2),
+
+        duration: Duration(seconds: 1),
       ),
     );
   }
@@ -98,29 +101,113 @@ class DetalheRegistroScreen extends StatelessWidget {
   void _confirmarRemocao(BuildContext context) {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Remover registro'),
-            content: const Text(
-              'Tem certeza que deseja remover este registro? Esta ação não pode ser desfeita.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.read<RegistroBloc>().add(
-                    RemoverRegistro(registroId: registro.id!),
-                  );
-                },
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Remover'),
-              ),
-            ],
+      builder: (BuildContext context) {
+        // Get screen size
+        final Size screenSize = MediaQuery.of(context).size;
+        final double screenWidth = screenSize.width;
+        final double screenHeight = screenSize.height;
+
+        // Calculate responsive sizes
+        final double titleFontSize = screenWidth * 0.05; // 5% of screen width
+        final double bodyFontSize = screenWidth * 0.04; // 4% of screen width
+        final double buttonHeight = screenHeight * 0.06; // 6% of screen height
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(
+              screenWidth * 0.04,
+            ), // Responsive border radius
           ),
+          contentPadding: EdgeInsets.fromLTRB(
+            screenWidth * 0.06, // Left padding
+            screenHeight * 0.03, // Top padding
+            screenWidth * 0.06, // Right padding
+            screenHeight * 0.02, // Bottom padding
+          ),
+          title: Text(
+            'Remover registro',
+            style: TextStyle(
+              fontSize: titleFontSize,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+              fontFamily: 'Inter',
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: Text(
+            'Tem certeza que deseja remover este registro? Esta ação não pode ser desfeita.',
+            style: TextStyle(
+              fontSize: bodyFontSize,
+              color: Colors.black87,
+              fontFamily: 'Inter',
+              height: 1.5,
+            ),
+            textAlign: TextAlign.justify,
+          ),
+          actionsPadding: EdgeInsets.fromLTRB(
+            screenWidth * 0.06, // Left padding
+            0, // Top padding
+            screenWidth * 0.06, // Right padding
+            screenHeight * 0.03, // Bottom padding
+          ),
+          actions: [
+            // Layout de coluna para os botões ocuparem toda a largura
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Botão principal "Remover"
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.read<RegistroBloc>().add(
+                      RemoverRegistro(registroId: registro.id!),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.08),
+                    ),
+                    minimumSize: Size(double.infinity, buttonHeight),
+                  ),
+                  child: Text(
+                    'Remover',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Inter',
+                      fontSize: bodyFontSize,
+                    ),
+                  ),
+                ),
+
+                SizedBox(
+                  height: screenHeight * 0.01,
+                ), // Espaçamento entre botões
+                // Botão secundário "Cancelar"
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey[700],
+                    minimumSize: Size(
+                      double.infinity,
+                      buttonHeight *
+                          0.8, // Ligeiramente menor que o botão principal
+                    ),
+                  ),
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(
+                      fontSize: bodyFontSize,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -200,17 +287,21 @@ class DetalheRegistroScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalhes da Irregularidade'),
-        actions: [
-          BlocBuilder<RegistroBloc, RegistroState>(
-            builder: (context, state) {
-              if (state is RegistroCarregado && !state.estaOnline) {
-                return const OfflineBadge();
-              }
-              return const SizedBox.shrink();
-            },
+        title: Text(
+          "Detalhes",
+          style: const TextStyle(
+            fontSize: 34, // Fonte maior
+            fontWeight: FontWeight.bold, // Negrito
+            color: Colors.white,
+            fontFamily: 'Inter', // Se quiser manter seu padrão de fontes
           ),
-        ],
+        ),
+
+        backgroundColor: const Color(0xFF002569),
+        centerTitle: false,
+        elevation: 0, // Sem sombra
+        foregroundColor: Colors.white, // Ícones brancos
+        toolbarHeight: 80, // <- aumenta a altura da AppBar
       ),
       body: BlocListener<RegistroBloc, RegistroState>(
         listener: (context, state) {
@@ -226,6 +317,35 @@ class DetalheRegistroScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              BlocBuilder<ConnectivityBloc, ConnectivityState>(
+                builder: (context, state) {
+                  if (state is ConnectivityDisconnected) {
+                    return Container(
+                      color: Colors.red,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 16,
+                      ),
+                      width: double.infinity,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.wifi_off, color: Colors.white, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Offline',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return SizedBox.shrink();
+                },
+              ),
               // Imagem principal
               Hero(
                 tag: 'imagem_${registro.id}',
@@ -540,7 +660,7 @@ class DetalheRegistroScreen extends StatelessWidget {
                           child: CustomButton(
                             texto: 'Compartilhar',
                             icone: Icons.share,
-                            cor: Colors.blue,
+                            cor: Theme.of(context).colorScheme.primary,
                             onPressed: () => _compartilharRegistro(context),
                           ),
                         ),

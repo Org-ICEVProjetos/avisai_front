@@ -1,7 +1,7 @@
 name: avisai4
-description: "A new Flutter project."
+description: "Aplicativo identificador de irregularidades em Teresina"
 publish_to: 'none'
-version: 0.1.0
+version: 1.0.6+6
 
 environment:
   sdk: ^3.7.0
@@ -52,6 +52,7 @@ flutter:
     - 'assets/images/logo.png'
     - 'assets/images/login.png'
     - 'assets/images/recuperacao_senha.png'
+    - 'assets/images/placeholder.png'
 
   fonts:
     - family: Inter

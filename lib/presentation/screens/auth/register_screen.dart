@@ -186,6 +186,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           content: Text(
             'Você deve concordar com os Termos e Política de Privacidade',
           ),
+          duration: Duration(seconds: 1),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -193,6 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('As senhas devem ser iguais'),
+          duration: Duration(seconds: 1),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -281,6 +283,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.mensagem),
+                duration: Duration(seconds: 1),
                 backgroundColor: theme.colorScheme.error,
               ),
             );
@@ -302,6 +305,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      SizedBox(height: 20),
                       // Título "Cadastro" com animação
                       SlideTransition(
                         position: _slideTitleAnimation,
@@ -372,7 +376,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               child: _buildInputField(
                                 controller: _cpfController,
                                 label: 'CPF',
-                                hint: "Digite sua senha",
+                                hint: "Digite seu CPF",
                                 keyboardType: TextInputType.number,
                                 validator: _validarCPF,
                                 inputFormatters: [
@@ -466,7 +470,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                                           TextSpan(
                                             text: 'Termos',
                                             style: TextStyle(
-                                              color: Colors.blue,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
                                               fontWeight: FontWeight.bold,
                                               decoration:
                                                   TextDecoration.underline,
@@ -476,7 +483,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                                           TextSpan(
                                             text: 'Política de Privacidade',
                                             style: TextStyle(
-                                              color: Colors.blue,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
                                               fontWeight: FontWeight.bold,
                                               decoration:
                                                   TextDecoration.underline,
@@ -565,7 +575,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                                       style: theme.textTheme.titleSmall
                                           ?.copyWith(
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.blue,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
                                           ),
                                     ),
                                   ),
@@ -616,11 +629,11 @@ class _RegisterScreenState extends State<RegisterScreen>
             inputFormatters: inputFormatters,
             style: theme.textTheme.bodyLarge,
             decoration: InputDecoration(
-              labelText: label,
-              labelStyle: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[500],
-              ),
+              // labelText: label,
+              // labelStyle: TextStyle(
+              //   fontWeight: FontWeight.bold,
+              //   color: Colors.grey[500],
+              // ),
               hintText: hint,
               hintStyle: TextStyle(
                 fontWeight: FontWeight.bold,

@@ -203,6 +203,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.mensagem),
+                duration: Duration(seconds: 1),
                 backgroundColor: Colors.red,
               ),
             );
@@ -261,7 +262,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 TextSpan(
                   text: 'e-mail',
                   style: TextStyle(
-                    color: Colors.blue,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -269,7 +270,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 TextSpan(
                   text: 'CPF',
                   style: TextStyle(
-                    color: Colors.blue,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

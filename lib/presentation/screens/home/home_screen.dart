@@ -8,7 +8,6 @@ import '../registro/novo_registro_screen.dart';
 import '../registro/meus_registros_screen.dart';
 import '../mapa/mapa_irregularidades_screen.dart';
 import '../auth/login_screen.dart';
-import '../widgets/offline_badge.dart';
 
 class HomeScreen extends StatefulWidget {
   final int index;
@@ -47,9 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
         NovoRegistroScreen(
           usuarioId: usuario.id!,
           usuarioNome: usuario.nome,
-          isVisible:
-              _indiceAbaSelecionada ==
-              1, // Verifica se esta aba está selecionada
+          isVisible: _indiceAbaSelecionada == 1,
         ),
         const MapaIrregularidadesScreen(),
       ]);
@@ -89,6 +86,151 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Título personalizado com base na aba selecionada
+  String _getTitulo() {
+    switch (_indiceAbaSelecionada) {
+      case 0:
+        return 'Histórico';
+      case 1:
+        return 'Registrar';
+      case 2:
+        return 'Mapa';
+      default:
+        return 'Avisaí';
+    }
+  }
+
+  // Ações personalizadas com base na aba selecionada
+  List<Widget> _getAcoes() {
+    List<Widget> acoes = [];
+
+    // Botão de logout para todas as abas
+    acoes.add(
+      IconButton(
+        icon: const Icon(Icons.logout, size: 30),
+        onPressed: () {
+          // Mostrar diálogo de confirmação
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              // Get screen size
+              final Size screenSize = MediaQuery.of(context).size;
+              final double screenWidth = screenSize.width;
+              final double screenHeight = screenSize.height;
+
+              // Calculate responsive sizes
+              final double titleFontSize =
+                  screenWidth * 0.05; // 5% of screen width
+              final double bodyFontSize =
+                  screenWidth * 0.04; // 4% of screen width
+              final double buttonHeight =
+                  screenHeight * 0.06; // 6% of screen height
+
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    screenWidth * 0.04,
+                  ), // Responsive border radius
+                ),
+                contentPadding: EdgeInsets.fromLTRB(
+                  screenWidth * 0.06, // Left padding
+                  screenHeight * 0.03, // Top padding
+                  screenWidth * 0.06, // Right padding
+                  screenHeight * 0.02, // Bottom padding
+                ),
+                title: Text(
+                  'Sair',
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    fontFamily: 'Inter',
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                content: Text(
+                  'Tem certeza que deseja sair?',
+                  style: TextStyle(
+                    fontSize: bodyFontSize,
+                    color: Colors.black87,
+                    fontFamily: 'Inter',
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                actionsPadding: EdgeInsets.fromLTRB(
+                  screenWidth * 0.06, // Left padding
+                  0, // Top padding
+                  screenWidth * 0.06, // Right padding
+                  screenHeight * 0.03, // Bottom padding
+                ),
+                actions: [
+                  // Layout de coluna para os botões ocuparem toda a largura
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Botão principal "Sair"
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          context.read<AuthBloc>().add(LogoutSolicitado());
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              screenWidth * 0.08,
+                            ),
+                          ),
+                          minimumSize: Size(double.infinity, buttonHeight),
+                        ),
+                        child: Text(
+                          'Sair',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Inter',
+                            fontSize: bodyFontSize,
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(
+                        height: screenHeight * 0.01,
+                      ), // Espaçamento entre botões
+                      // Botão secundário "Cancelar"
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF022865),
+                          minimumSize: Size(
+                            double.infinity,
+                            buttonHeight *
+                                0.8, // Ligeiramente menor que o botão principal
+                          ),
+                        ),
+                        child: Text(
+                          'Cancelar',
+                          style: TextStyle(
+                            fontSize: bodyFontSize,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        tooltip: 'Sair',
+      ),
+    );
+
+    return acoes;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
@@ -101,77 +243,23 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       child: Scaffold(
+        // AppBar personalizada com base na aba selecionada
         appBar: AppBar(
-          title: const Text('Avisaí'),
-          actions: [
-            BlocBuilder<ConnectivityBloc, ConnectivityState>(
-              builder: (context, state) {
-                if (state is ConnectivityDisconnected) {
-                  return const OfflineBadge();
-                }
-                return const SizedBox.shrink();
-              },
+          title: Text(
+            _getTitulo(),
+            style: const TextStyle(
+              fontSize: 34, // Fonte maior
+              fontWeight: FontWeight.bold, // Negrito
+              color: Colors.white,
+              fontFamily: 'Inter', // Se quiser manter seu padrão de fontes
             ),
-            IconButton(
-              icon: const Icon(Icons.sync),
-              onPressed: () {
-                final connectivityState =
-                    context.read<ConnectivityBloc>().state;
-                if (connectivityState is ConnectivityConnected) {
-                  context.read<RegistroBloc>().add(
-                    SincronizarRegistrosPendentes(),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Sincronizando registros...'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Sem conexão com a internet. Não é possível sincronizar.',
-                      ),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              tooltip: 'Sincronizar',
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                // Mostrar diálogo de confirmação
-                showDialog(
-                  context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text('Sair'),
-                        content: const Text('Tem certeza que deseja sair?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Cancelar'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              context.read<AuthBloc>().add(LogoutSolicitado());
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
-                            ),
-                            child: const Text('Sair'),
-                          ),
-                        ],
-                      ),
-                );
-              },
-              tooltip: 'Sair',
-            ),
-          ],
+          ),
+          actions: _getAcoes(),
+          backgroundColor: const Color(0xFF002569),
+          centerTitle: false,
+          elevation: 0, // Sem sombra
+          foregroundColor: Colors.white, // Ícones brancos
+          toolbarHeight: 80, // <- aumenta a altura da AppBar
         ),
         body: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
@@ -185,6 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           },
         ),
+        // BottomNavigationBar personalizada
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _indiceAbaSelecionada,
           onTap: (indice) {
@@ -192,16 +281,38 @@ class _HomeScreenState extends State<HomeScreen> {
               _indiceAbaSelecionada = indice;
             });
           },
-          items: const [
+          backgroundColor: Colors.white,
+          selectedItemColor: const Color(
+            0xFF002569,
+          ), // Azul escuro para o item selecionado
+          unselectedItemColor: Colors.grey,
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.list),
-              label: 'Meus Registros',
+              icon: Icon(
+                _indiceAbaSelecionada == 0
+                    ? Icons.history
+                    : Icons.history_outlined,
+                size: 35,
+              ),
+              label: 'Histórico',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.add_a_photo),
+              icon: Icon(
+                _indiceAbaSelecionada == 1
+                    ? Icons.camera_alt
+                    : Icons.camera_alt_outlined,
+                size: 35,
+              ),
+
               label: 'Registrar',
             ),
-            BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Mapa'),
+            BottomNavigationBarItem(
+              icon: Icon(
+                _indiceAbaSelecionada == 2 ? Icons.map : Icons.map_outlined,
+                size: 35,
+              ),
+              label: 'Mapa',
+            ),
           ],
         ),
       ),

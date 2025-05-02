@@ -163,17 +163,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(Carregando());
     try {
-      // final usuario = await _authRepository.login(
-      //   event.cpf,
-      //   event.senha,
+      final usuario = await _authRepository.login(event.cpf, event.senha);
+      // final usuario = Usuario(
+      //   id: "123",
+      //   nome: "João",
+      //   cpf: "",
+      //   email: "",
+      //   senha: "",
       // );
-      final usuario = Usuario(
-        id: "123",
-        nome: "João",
-        cpf: "",
-        email: "",
-        senha: "",
-      );
       emit(Autenticado(usuario));
     } catch (e) {
       emit(AuthErro(e.toString()));

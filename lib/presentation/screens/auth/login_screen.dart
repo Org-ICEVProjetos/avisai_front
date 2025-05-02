@@ -168,6 +168,7 @@ class _LoginScreenState extends State<LoginScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.mensagem),
+                duration: Duration(seconds: 1),
                 backgroundColor: theme.colorScheme.error,
               ),
             );
@@ -262,6 +263,7 @@ class _LoginScreenState extends State<LoginScreen>
                         child: Form(
                           key: _formKey,
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               // Campo CPF
                               Material(
@@ -278,11 +280,11 @@ class _LoginScreenState extends State<LoginScreen>
                                   ],
                                   style: theme.textTheme.bodyLarge,
                                   decoration: InputDecoration(
-                                    labelText: 'CPF',
-                                    labelStyle: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[500],
-                                    ),
+                                    // labelText: 'CPF',
+                                    // labelStyle: TextStyle(
+                                    //   fontWeight: FontWeight.bold,
+                                    //   color: Colors.grey[500],
+                                    // ),
                                     hintText: 'Digite seu CPF',
                                     hintStyle: TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -300,16 +302,25 @@ class _LoginScreenState extends State<LoginScreen>
                                       _cpfFieldKey.currentState?.errorText;
                                   if (errorText != null &&
                                       errorText.isNotEmpty) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(
-                                        left: 12.0,
-                                        top: 4.0,
-                                      ),
-                                      child: Text(
-                                        errorText,
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontSize: 12,
+                                    return Align(
+                                      alignment:
+                                          Alignment
+                                              .centerLeft, // Força alinhamento à esquerda
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          left:
+                                              8.0, // Um pequeno padding para não ficar colado à borda
+                                          top: 4.0,
+                                        ),
+                                        child: Text(
+                                          errorText,
+                                          style: TextStyle(
+                                            color: Colors.red,
+                                            fontSize: 12,
+                                          ),
+                                          textAlign:
+                                              TextAlign
+                                                  .left, // Garante que o texto esteja alinhado à esquerda
                                         ),
                                       ),
                                     );
@@ -333,11 +344,11 @@ class _LoginScreenState extends State<LoginScreen>
                                   obscureText: !_mostrarSenha,
                                   style: theme.textTheme.bodyLarge,
                                   decoration: InputDecoration(
-                                    labelText: 'Senha',
-                                    labelStyle: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[500],
-                                    ),
+                                    // labelText: 'Senha',
+                                    // labelStyle: TextStyle(
+                                    //   fontWeight: FontWeight.bold,
+                                    //   color: Colors.grey[500],
+                                    // ),
                                     hintText: 'Digite sua senha',
                                     hintStyle: TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -368,16 +379,25 @@ class _LoginScreenState extends State<LoginScreen>
                                       _senhaFieldKey.currentState?.errorText;
                                   if (errorText != null &&
                                       errorText.isNotEmpty) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(
-                                        left: 12.0,
-                                        top: 4.0,
-                                      ),
-                                      child: Text(
-                                        errorText,
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontSize: 12,
+                                    return Align(
+                                      alignment:
+                                          Alignment
+                                              .centerLeft, // Força alinhamento à esquerda
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          left:
+                                              8.0, // Um pequeno padding para não ficar colado à borda
+                                          top: 4.0,
+                                        ),
+                                        child: Text(
+                                          errorText,
+                                          style: TextStyle(
+                                            color: Colors.red,
+                                            fontSize: 12,
+                                          ),
+                                          textAlign:
+                                              TextAlign
+                                                  .left, // Garante que o texto esteja alinhado à esquerda
                                         ),
                                       ),
                                     );
@@ -386,7 +406,6 @@ class _LoginScreenState extends State<LoginScreen>
                                   }
                                 },
                               ),
-
                               // Link "Esqueceu a senha" (incluído no form animation)
                               Align(
                                 alignment: Alignment.centerRight,
@@ -411,7 +430,10 @@ class _LoginScreenState extends State<LoginScreen>
                                     child: Text(
                                       'Esqueceu a senha?',
                                       style: theme.textTheme.titleSmall
-                                          ?.copyWith(color: Colors.grey[800]),
+                                          ?.copyWith(
+                                            color: Colors.grey[800],
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
                                   ),
                                 ),
@@ -502,7 +524,7 @@ class _LoginScreenState extends State<LoginScreen>
                               child: Text(
                                 'Cadastre-se',
                                 style: theme.textTheme.titleSmall?.copyWith(
-                                  color: Colors.blue,
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),

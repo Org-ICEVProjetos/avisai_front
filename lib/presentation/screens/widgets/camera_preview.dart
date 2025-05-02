@@ -113,6 +113,7 @@ class _CustomCameraPreviewState extends State<CustomCameraPreview> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Erro ao capturar imagem. Tente novamente.'),
+          duration: Duration(seconds: 1),
           backgroundColor: Colors.red,
         ),
       );
@@ -152,10 +153,7 @@ class _CustomCameraPreviewState extends State<CustomCameraPreview> {
                 SizedBox(
                   width: double.infinity,
                   height: double.infinity,
-                  child: Image.file(
-                    widget.imageFile!,
-                    fit: BoxFit.contain,
-                  ),
+                  child: Image.file(widget.imageFile!, fit: BoxFit.contain),
                 )
               else if (widget.controller != null &&
                   widget.controller!.value.isInitialized)
@@ -164,9 +162,7 @@ class _CustomCameraPreviewState extends State<CustomCameraPreview> {
                   child: CameraPreview(widget.controller!),
                 )
               else
-                const Center(
-                  child: CircularProgressIndicator(),
-                ),
+                const Center(child: CircularProgressIndicator()),
 
               // Indicador de carregamento ao capturar
               if (_isCapturing)
@@ -174,9 +170,7 @@ class _CustomCameraPreviewState extends State<CustomCameraPreview> {
                   width: double.infinity,
                   height: double.infinity,
                   color: Colors.black26,
-                  child: const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  child: const Center(child: CircularProgressIndicator()),
                 ),
 
               // Overlay de grade para ajudar no enquadramento
@@ -220,9 +214,7 @@ class _CustomCameraPreviewState extends State<CustomCameraPreview> {
     return SizedBox(
       width: double.infinity,
       height: double.infinity,
-      child: CustomPaint(
-        painter: GridPainter(),
-      ),
+      child: CustomPaint(painter: GridPainter()),
     );
   }
 
@@ -276,9 +268,10 @@ class _CustomCameraPreviewState extends State<CustomCameraPreview> {
 class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
-      ..strokeWidth = 1;
+    final paint =
+        Paint()
+          ..color = Colors.white.withOpacity(0.3)
+          ..strokeWidth = 1;
 
     // Linhas horizontais
     final double tercoAltura = size.height / 3;

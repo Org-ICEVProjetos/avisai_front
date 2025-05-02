@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:avisai4/bloc/auth/auth_bloc.dart';
+import 'package:avisai4/bloc/connectivity/connectivity_bloc.dart';
 import 'package:avisai4/services/location_service.dart';
 import 'package:avisai4/services/user_storage.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,6 @@ import 'package:geolocator/geolocator.dart';
 import '../../../bloc/registro/registro_bloc.dart';
 import '../../../data/models/registro.dart';
 
-import '../widgets/offline_badge.dart';
 import 'detalhes_registro_screen.dart';
 
 class MapaIrregularidadesScreen extends StatefulWidget {
@@ -185,40 +185,198 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
     }
   }
 
+  // Funções auxiliares para ícones e cores
+  IconData _getCategoriaIcone(CategoriaIrregularidade categoria) {
+    switch (categoria) {
+      case CategoriaIrregularidade.buraco:
+        return Icons.construction;
+      case CategoriaIrregularidade.posteDefeituoso:
+        return Icons.lightbulb_outline;
+      case CategoriaIrregularidade.lixoIrregular:
+        return Icons.delete_outline;
+      default:
+        return Icons.warning_amber_outlined;
+    }
+  }
+
+  IconData _getStatusIcone(StatusValidacao status) {
+    switch (status) {
+      case StatusValidacao.pendente:
+        return Icons.hourglass_empty;
+      case StatusValidacao.validado:
+        return Icons.check_circle;
+      case StatusValidacao.naoValidado:
+        return Icons.cancel;
+      case StatusValidacao.emExecucao:
+        return Icons.engineering;
+      case StatusValidacao.resolvido:
+        return Icons.task_alt;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  Color _getStatusCor(StatusValidacao status) {
+    switch (status) {
+      case StatusValidacao.pendente:
+        return Colors.orange;
+      case StatusValidacao.validado:
+        return Colors.green;
+      case StatusValidacao.naoValidado:
+        return Colors.red;
+      case StatusValidacao.emExecucao:
+        return Theme.of(context).colorScheme.primary;
+      case StatusValidacao.resolvido:
+        return Colors.green.shade800;
+      default:
+        return Colors.grey;
+    }
+  }
+
   void _mostrarInfoWindow(BuildContext context, Registro registro) {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text(_getCategoriaTexto(registro.categoria)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            title:
+                null, // Removendo o título padrão para personalizar dentro do content
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(registro.endereco ?? 'Endereço não disponível'),
-                const SizedBox(height: 10),
-                Text('Status: ${_getStatusTexto(registro.status)}'),
+                // Ícone e título personalizados na mesma linha
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    // Ícone baseado na categoria
+                    Icon(
+                      _getCategoriaIcone(registro.categoria),
+                      color: const Color(0xFF022865),
+                      size: 36,
+                    ),
+                    const SizedBox(width: 16),
+                    // Título com o nome da categoria
+                    Expanded(
+                      child: Text(
+                        _getCategoriaTexto(registro.categoria),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Endereço com ícone
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 20,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        registro.endereco ?? 'Endereço não disponível',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                          fontFamily: 'Inter',
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Status com ícone e cor apropriada
+                Row(
+                  children: [
+                    Icon(
+                      _getStatusIcone(registro.status),
+                      size: 20,
+                      color: _getStatusCor(registro.status),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Status: ${_getStatusTexto(registro.status)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
               ],
             ),
+            actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Fechar'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              DetalheRegistroScreen(registro: registro),
+              // Botões em layout de coluna para ocupar a largura total
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Botão principal "Ver detalhes"
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  DetalheRegistroScreen(registro: registro),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF022865),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                  );
-                },
-                child: const Text('Ver detalhes'),
+                    child: const Text(
+                      'Ver detalhes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Botão secundário "Fechar"
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey[700],
+                    ),
+                    child: const Text(
+                      'Fechar',
+                      style: TextStyle(fontSize: 16, fontFamily: 'Inter'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -305,7 +463,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
       case CategoriaIrregularidade.buraco:
         return Colors.red;
       case CategoriaIrregularidade.posteDefeituoso:
-        return Colors.blue;
+        return Theme.of(context).colorScheme.primary;
       case CategoriaIrregularidade.lixoIrregular:
         return Colors.green;
     }
@@ -394,6 +552,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                               child: Container(
                                 width: 10,
                                 height: 10,
+
                                 decoration: const BoxDecoration(
                                   color: Colors.white,
                                   shape: BoxShape.circle,
@@ -416,25 +575,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                 ],
               ),
 
-              // Barra de status de conectividade
-              Positioned(
-                top: MediaQuery.of(context).padding.top,
-                left: 0,
-                right: 0,
-                child: BlocBuilder<RegistroBloc, RegistroState>(
-                  builder: (context, state) {
-                    if (state is RegistroCarregado && !state.estaOnline) {
-                      return Container(
-                        color: Colors.black54,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: const Center(child: OfflineBadge()),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ),
-
               // Barra superior com filtros
               Positioned(
                 top: MediaQuery.of(context).padding.top + 50,
@@ -451,11 +591,11 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<
-                            CategoriaIrregularidade?
+                            CategoriaIrregularidade
                           >(
-                            value: _filtroCategoria,
+                            value:
+                                _filtroCategoria, // precisa estar null inicialmente para mostrar o hint
                             decoration: InputDecoration(
-                              labelText: 'Filtrar por categoria',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -464,20 +604,23 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                                 vertical: 8,
                               ),
                             ),
+                            hint: const Text(
+                              'Filtrar por categoria',
+                            ), // Mostra quando value for null
                             items: const [
-                              DropdownMenuItem<CategoriaIrregularidade?>(
+                              DropdownMenuItem<CategoriaIrregularidade>(
                                 value: null,
                                 child: Text('Todas as categorias'),
                               ),
-                              DropdownMenuItem<CategoriaIrregularidade?>(
+                              DropdownMenuItem(
                                 value: CategoriaIrregularidade.buraco,
                                 child: Text('Buracos na via'),
                               ),
-                              DropdownMenuItem<CategoriaIrregularidade?>(
+                              DropdownMenuItem(
                                 value: CategoriaIrregularidade.posteDefeituoso,
                                 child: Text('Postes com defeito'),
                               ),
-                              DropdownMenuItem<CategoriaIrregularidade?>(
+                              DropdownMenuItem(
                                 value: CategoriaIrregularidade.lixoIrregular,
                                 child: Text('Descartes irregulares'),
                               ),
@@ -629,6 +772,49 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
               // Carregando indicador
               if (state is RegistroCarregando)
                 const Center(child: CircularProgressIndicator()),
+
+              Align(
+                alignment: Alignment.topCenter,
+                child: Text(
+                  "© OpenStreetMap contributors",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              // Barra de status de conectividade
+              Positioned(
+                top: MediaQuery.of(context).padding.top,
+                left: 0,
+                right: 0,
+                child: BlocBuilder<ConnectivityBloc, ConnectivityState>(
+                  builder: (context, state) {
+                    if (state is ConnectivityDisconnected) {
+                      return Container(
+                        color: Colors.red,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 16,
+                        ),
+                        width: double.infinity,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.wifi_off, color: Colors.white, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Offline',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return SizedBox.shrink();
+                  },
+                ),
+              ),
             ],
           );
         },

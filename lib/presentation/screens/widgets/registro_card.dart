@@ -165,13 +165,9 @@ class RegistroCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton.icon(
+                    IconButton(
                       onPressed: onDelete,
                       icon: const Icon(Icons.delete, color: Colors.red),
-                      label: const Text(
-                        'Remover',
-                        style: TextStyle(color: Colors.red),
-                      ),
                     ),
                   ],
                 ),

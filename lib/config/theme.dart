@@ -6,7 +6,8 @@ ThemeData appTheme() {
     primaryColorDark: const Color(0xFF303F9F),
     primaryColorLight: const Color(0xFFC5CAE9),
     colorScheme: ColorScheme.fromSwatch().copyWith(
-      secondary: const Color(0xFFFFC107),
+      primary: const Color(0xFF0D65E8),
+      secondary: const Color(0xFFF26300),
       error: const Color(0xFFD32F2F),
     ),
 
@@ -106,11 +107,17 @@ ThemeData appTheme() {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: BorderSide.none,
+        borderSide: BorderSide(
+          color: Color(0xFFE6E6E6), // cor da borda quando não está focado
+          width: 0.5, // espessura da borda
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: BorderSide.none,
+        borderSide: BorderSide(
+          color: Color(0xFFE6E6E6), // cor da borda quando não está focado
+          width: 0.5, // espessura da borda
+        ),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
@@ -122,8 +129,6 @@ ThemeData appTheme() {
       ),
       errorStyle: TextStyle(height: 0, fontSize: 0),
       contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      labelStyle: const TextStyle(color: Colors.black54, fontFamily: 'Inter'),
-      hintStyle: const TextStyle(color: Colors.black38, fontFamily: 'Inter'),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(

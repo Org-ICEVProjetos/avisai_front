@@ -5,12 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../bloc/connectivity/connectivity_bloc.dart';
 import '../../../bloc/registro/registro_bloc.dart';
 import '../../../data/models/registro.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/offline_badge.dart';
 
 class NovoRegistroScreen extends StatefulWidget {
   final String usuarioId;
@@ -28,7 +26,8 @@ class NovoRegistroScreen extends StatefulWidget {
   _NovoRegistroScreenState createState() => _NovoRegistroScreenState();
 }
 
-class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
+class _NovoRegistroScreenState extends State<NovoRegistroScreen>
+    with SingleTickerProviderStateMixin {
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   File? _imagemCapturada;
@@ -40,9 +39,27 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       CategoriaIrregularidade.buraco;
   Position? _localizacaoCaptura;
 
+  // Controlador de animação
+  late AnimationController _buttonAnimationController;
+  late Animation<double> _buttonScaleAnimation;
+
   @override
   void initState() {
     super.initState();
+
+    // Inicializar controlador de animação
+    _buttonAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+
+    _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(
+        parent: _buttonAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     // Inicializa a câmera após um pequeno delay para garantir que o widget está montado
     Future.delayed(Duration(milliseconds: 300), () {
       if (mounted) {
@@ -53,6 +70,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
 
   @override
   void dispose() {
+    // Liberar recursos da animação
+    _buttonAnimationController.dispose();
+
     try {
       // Garantir que os recursos da câmera são liberados
       if (_cameraController != null) {
@@ -62,6 +82,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     } catch (e) {
       print("Erro ao liberar câmera no dispose: $e");
     }
+    _liberarCamera();
     super.dispose();
   }
 
@@ -127,6 +148,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       print('Status da permissão de câmera: $statusCamera');
 
       if (statusCamera.isDenied) {
+        await Permission.camera.request();
         setState(() {
           _inicializando = false;
           _erroCamera = true;
@@ -187,6 +209,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Câmera não inicializada. Tente novamente.'),
+          duration: Duration(seconds: 1),
           backgroundColor: Colors.red,
         ),
       );
@@ -225,6 +248,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao capturar imagem: $e'),
+          duration: Duration(seconds: 1),
           backgroundColor: Colors.red,
         ),
       );
@@ -239,6 +263,8 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         imageQuality: 70, // Reduzir qualidade para economizar memória
       );
 
+      if (arquivo == null) return;
+
       setState(() {
         _inicializando = true;
       });
@@ -251,14 +277,12 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         ),
       );
 
-      if (arquivo != null) {
-        setState(() {
-          _imagemCapturada = File(arquivo.path);
-          _tirouFoto = true;
-          _localizacaoCaptura = position;
-          _inicializando = false;
-        });
-      }
+      setState(() {
+        _imagemCapturada = File(arquivo.path);
+        _tirouFoto = true;
+        _localizacaoCaptura = position;
+        _inicializando = false;
+      });
     } catch (e) {
       setState(() {
         _inicializando = false;
@@ -267,6 +291,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao selecionar imagem: $e'),
+          duration: Duration(seconds: 1),
           backgroundColor: Colors.red,
         ),
       );
@@ -285,6 +310,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Nenhuma imagem capturada.'),
+          duration: Duration(seconds: 1),
           backgroundColor: Colors.red,
         ),
       );
@@ -297,6 +323,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
           content: Text(
             'Localização não disponível. Verifique se o GPS está ativado.',
           ),
+          duration: Duration(seconds: 1),
           backgroundColor: Colors.red,
         ),
       );
@@ -309,10 +336,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     });
 
     // IMPORTANTE: Libere os recursos da câmera antes de navegar
-    if (_cameraController != null) {
-      await _cameraController!.dispose();
-      _cameraController = null;
-    }
+    await _liberarCamera(); // Alterado para usar o método existente
 
     try {
       // Armazene o caminho da imagem capturada
@@ -330,15 +354,11 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         ),
       );
 
-      // Aguarde um curto período para garantir que o processo começou
-      await Future.delayed(Duration(milliseconds: 200));
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen(index: 0)),
+      );
 
-      // Navegue para a tela principal
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen(index: 0)),
-        );
-      }
+      // Navegue para a tela principal e libere recursos explicitamente
     } catch (e) {
       print("Erro durante o envio do registro: $e");
       if (mounted) {
@@ -349,6 +369,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao enviar registro: $e'),
+            duration: Duration(seconds: 1),
             backgroundColor: Colors.red,
           ),
         );
@@ -369,124 +390,64 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
             ),
           );
         } else if (state is RegistroErro) {
-          // // Mostra erro mas não fecha a tela
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //   SnackBar(
-          //     content: Text("Erro na API, mas registro salvo localmente"),
-          //     backgroundColor: Colors.orange,
-          //   ),
-          // );
+          // Mostra erro mas não fecha a tela
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Erro na API, mas registro salvo localmente"),
+              duration: Duration(seconds: 1),
+              backgroundColor: Colors.orange,
+            ),
+          );
         }
       },
       child: Scaffold(
-        body:
-            _inicializando
-                ? const Center(child: CircularProgressIndicator())
-                : _construirCorpo(),
-      ),
-    );
-  }
-
-  Widget _construirCorpo() {
-    return Column(
-      children: [
-        // Área da câmera ou imagem
-        Expanded(child: _tirouFoto ? _visualizarImagem() : _mostrarCamera()),
-
-        // Área de seleção de categoria
-        if (_tirouFoto)
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Selecione a categoria da irregularidade:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<CategoriaIrregularidade>(
-                  value: _categoriaIrregularidade,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
+        body: Column(
+          children: [
+            // Status de conectividade no topo
+            BlocBuilder<ConnectivityBloc, ConnectivityState>(
+              builder: (context, state) {
+                if (state is ConnectivityDisconnected) {
+                  return Container(
+                    color: Colors.red,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
                       horizontal: 16,
-                      vertical: 8,
                     ),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: CategoriaIrregularidade.buraco,
-                      child: Text('Buraco na via'),
+                    width: double.infinity,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.wifi_off, color: Colors.white, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Offline',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    DropdownMenuItem(
-                      value: CategoriaIrregularidade.posteDefeituoso,
-                      child: Text('Poste com defeito'),
-                    ),
-                    DropdownMenuItem(
-                      value: CategoriaIrregularidade.lixoIrregular,
-                      child: Text('Descarte irregular de lixo'),
-                    ),
-                  ],
-                  onChanged: (valor) {
-                    if (valor != null) {
-                      setState(() {
-                        _categoriaIrregularidade = valor;
-                      });
-                    }
-                  },
-                ),
-              ],
+                  );
+                }
+                return SizedBox.shrink();
+              },
             ),
-          ),
 
-        // Barra de botões
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children:
-                _tirouFoto
-                    ? [
-                      Expanded(
-                        child: CustomButton(
-                          icone: Icons.close,
-                          texto: 'Cancelar',
-                          onPressed: _cancelar,
-                          cor: Colors.red,
-                        ),
-                      ),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: CustomButton(
-                          icone: Icons.send,
-                          texto: 'Enviar',
-                          onPressed: _enviarRegistro,
-                          cor: Colors.green,
-                        ),
-                      ),
-                    ]
-                    : [
-                      Expanded(
-                        child: CustomButton(
-                          icone: Icons.photo_library,
-                          texto: 'Galeria',
-                          onPressed: _selecionarDaGaleria,
-                        ),
-                      ),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: CustomButton(
-                          icone: Icons.camera_alt,
-                          texto: 'Capturar',
-                          onPressed: _erroCamera ? () {} : _capturarFoto,
-                          cor: Colors.blue,
-                        ),
-                      ),
-                    ],
-          ),
+            // Área da câmera ou imagem (expandida para ocupar o espaço disponível)
+            Expanded(
+              child:
+                  _inicializando
+                      ? const Center(child: CircularProgressIndicator())
+                      : _tirouFoto
+                      ? _visualizarImagemCapturada()
+                      : _mostrarCamera(),
+            ),
+          ],
         ),
-      ],
+
+        // Bottom Navigation Bar fixa
+      ),
     );
   }
 
@@ -516,17 +477,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     }
 
     // Verificações para câmera
-    if (_cameraController == null) {
-      return Center(
-        child: Text(
-          'Controlador da câmera é nulo.\nPor favor, reinicie o aplicativo.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.red),
-        ),
-      );
-    }
-
-    if (!_cameraController!.value.isInitialized) {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return Center(
         child: Text(
           'Câmera não inicializada.\nPor favor, aguarde ou reinicie o aplicativo.',
@@ -538,25 +489,79 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
 
     // Tenta mostrar o preview da câmera
     try {
-      return Container(
-        width: double.infinity,
-        child: AspectRatio(
-          aspectRatio: _cameraController!.value.aspectRatio,
-          child: CameraPreview(_cameraController!),
-        ),
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          // Preview da câmera
+          CameraPreview(_cameraController!),
+
+          // Botão de captura circular na parte inferior
+          Positioned(
+            bottom: 32,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: GestureDetector(
+                onTapDown: (_) {
+                  _buttonAnimationController.forward();
+                },
+                onTapUp: (_) {
+                  _buttonAnimationController.reverse();
+                  _capturarFoto();
+                },
+                onTapCancel: () {
+                  _buttonAnimationController.reverse();
+                },
+                child: AnimatedBuilder(
+                  animation: _buttonScaleAnimation,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _buttonScaleAnimation.value,
+                      child: Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.grey[300]!,
+                            width: 4,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.camera_alt,
+                          color: Colors.transparent,
+                          size: 36,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+
+          // Botão de galeria no canto inferior direito
+          Positioned(
+            bottom: 40,
+            right: 24,
+            child: GestureDetector(
+              onTap: _selecionarDaGaleria,
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF002569),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.photo_library, color: Colors.white, size: 24),
+              ),
+            ),
+          ),
+        ],
       );
     } catch (e) {
       print('Erro ao exibir preview da câmera: $e');
-      // Se pegar uma exceção relacionada a câmera descartada, mostrar mensagem apropriada
-      if (e.toString().contains('Disposed CameraController')) {
-        return Center(
-          child: Text(
-            'Câmera não disponível.\nTrocando de abas...',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.orange),
-          ),
-        );
-      }
       return Center(
         child: Text(
           'Erro ao exibir câmera: $e',
@@ -567,28 +572,254 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     }
   }
 
-  Widget _visualizarImagem() {
-    return Container(
-      width: double.infinity,
-      child:
-          _imagemCapturada != null
-              ? FadeInImage(
-                placeholder: AssetImage('assets/images/placeholder.png'),
-                image: FileImage(_imagemCapturada!),
-                fit: BoxFit.contain,
-                imageErrorBuilder: (context, error, stackTrace) {
-                  print('Erro ao carregar imagem: $error');
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+  Widget _visualizarImagemCapturada() {
+    return Stack(
+      children: [
+        // Fundo escurecido
+        Container(
+          color: Colors.black.withOpacity(0.7),
+          width: double.infinity,
+          height: double.infinity,
+        ),
+
+        // Card central com a imagem e opções
+        Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Imagem capturada com bordas arredondadas
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(16),
+                      bottom: Radius.circular(16),
+                    ),
+                    child: Stack(
+                      children: [
+                        AspectRatio(
+                          aspectRatio: 16 / 12,
+                          child:
+                              _imagemCapturada != null
+                                  ? Image.file(
+                                    _imagemCapturada!,
+                                    fit: BoxFit.cover,
+                                  )
+                                  : Container(
+                                    color: Colors.grey[300],
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      size: 50,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                        ),
+                        if (_imagemCapturada != null)
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: InkWell(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder:
+                                      (_) => Dialog(
+                                        backgroundColor: Colors.transparent,
+                                        insetPadding: EdgeInsets.all(10),
+                                        child: GestureDetector(
+                                          onTap: () => Navigator.pop(context),
+                                          child: InteractiveViewer(
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              child: Image.file(
+                                                _imagemCapturada!,
+                                                fit: BoxFit.contain,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                );
+                              },
+                              child: CircleAvatar(
+                                radius: 20,
+                                backgroundColor: Colors.black.withOpacity(0.6),
+                                child: Icon(
+                                  Icons.zoom_out_map,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Seletor de categoria
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.broken_image, size: 64, color: Colors.red),
-                      SizedBox(height: 16),
-                      Text('Erro ao carregar imagem: $error'),
+                      const SizedBox(height: 8),
+                      Material(
+                        elevation: 5,
+                        borderRadius: BorderRadius.circular(30),
+                        shadowColor: Colors.black.withOpacity(0.4),
+                        color: Colors.white,
+                        child: DropdownButtonFormField<CategoriaIrregularidade>(
+                          value:
+                              _categoriaIrregularidade, // Deve ser null inicialmente
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            suffixIcon: Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          hint: Text(
+                            'Selecione a categoria',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                          icon: const SizedBox.shrink(),
+                          items: [
+                            DropdownMenuItem(
+                              value: CategoriaIrregularidade.buraco,
+                              child: Text(
+                                'Buraco na via',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: CategoriaIrregularidade.posteDefeituoso,
+                              child: Text(
+                                'Poste com defeito',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: CategoriaIrregularidade.lixoIrregular,
+                              child: Text(
+                                'Descarte irregular de lixo',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ),
+                          ],
+                          onChanged: (valor) {
+                            if (valor != null) {
+                              setState(() {
+                                _categoriaIrregularidade = valor;
+                              });
+                            }
+                          },
+                        ),
+                      ),
                     ],
-                  );
-                },
-              )
-              : const Center(child: Text('Nenhuma imagem capturada')),
+                  ),
+                ),
+
+                // Texto de confirmação
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Text(
+                      'Você tem certeza que deseja enviar?',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[850],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Botões de ação
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Row(
+                    children: [
+                      // Botão Cancelar
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _cancelar,
+                          icon: Icon(Icons.close, size: 18),
+                          label: Text(
+                            'Cancelar',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            backgroundColor: Colors.white,
+                            side: BorderSide(color: Colors.red, width: 1.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      // Botão Enviar
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _enviarRegistro,
+                          icon: Icon(Icons.send, size: 18),
+                          label: Text(
+                            'Enviar',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.green,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
