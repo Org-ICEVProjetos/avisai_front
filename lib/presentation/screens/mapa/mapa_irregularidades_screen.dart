@@ -1,5 +1,6 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'dart:async';
-import 'package:avisai4/bloc/auth/auth_bloc.dart';
 import 'package:avisai4/bloc/connectivity/connectivity_bloc.dart';
 import 'package:avisai4/services/location_service.dart';
 import 'package:avisai4/services/user_storage.dart';
@@ -194,8 +195,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         return Icons.lightbulb_outline;
       case CategoriaIrregularidade.lixoIrregular:
         return Icons.delete_outline;
-      default:
-        return Icons.warning_amber_outlined;
     }
   }
 
@@ -211,8 +210,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         return Icons.engineering;
       case StatusValidacao.resolvido:
         return Icons.task_alt;
-      default:
-        return Icons.help_outline;
     }
   }
 
@@ -228,8 +225,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         return Theme.of(context).colorScheme.primary;
       case StatusValidacao.resolvido:
         return Colors.green.shade800;
-      default:
-        return Colors.grey;
     }
   }
 
@@ -440,9 +435,9 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
 
     // Ajustar zoom com base na diferença máxima
     double zoom = 15.0;
-    if (maxDiff > 0.5)
+    if (maxDiff > 0.5) {
       zoom = 8.0;
-    else if (maxDiff > 0.2)
+    } else if (maxDiff > 0.2)
       zoom = 10.0;
     else if (maxDiff > 0.1)
       zoom = 12.0;

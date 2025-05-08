@@ -1,3 +1,4 @@
+import 'package:avisai4/presentation/screens/auth/verificar_token_password.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -203,7 +204,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.mensagem),
-                duration: Duration(seconds: 1),
+                duration: Duration(seconds: 3),
                 backgroundColor: Colors.red,
               ),
             );
@@ -212,6 +213,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               _carregando = false;
               _enviado = true;
             });
+
+            // Navegar para a próxima tela de verificação de token
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder:
+                    (context) => VerifyTokenScreen(
+                      cpf: _cpfController.text,
+                      email: _emailController.text,
+                    ),
+              ),
+            );
+
             // Reiniciar a animação quando recebe confirmação
             _animationController.reset();
             _animationController.forward();
@@ -337,7 +350,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                     )
                     : ElevatedButton.icon(
                       onPressed: _recuperarSenha,
-
+                      icon: const Icon(Icons.send),
                       label: const Text(
                         'Recuperar Senha',
                         style: TextStyle(

@@ -1,3 +1,5 @@
+import 'package:avisai4/presentation/screens/home/onboarding_screen.dart';
+import 'package:avisai4/presentation/screens/widgets/tutorial_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,7 +8,7 @@ import '../../../bloc/auth/auth_bloc.dart';
 import '../home/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+  const RegisterScreen({super.key});
 
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
@@ -288,11 +290,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
             );
           } else if (state is Autenticado) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => const HomeScreen(index: 1),
-              ),
-            );
+            _verificarETrocarParaTutorial();
           }
         },
         builder: (context, state) {
@@ -519,7 +517,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                           onPressed: _registrar,
                                           style: theme.elevatedButtonTheme.style
                                               ?.copyWith(
-                                                shape: MaterialStateProperty.all<
+                                                shape: WidgetStateProperty.all<
                                                   RoundedRectangleBorder
                                                 >(
                                                   RoundedRectangleBorder(
@@ -663,6 +661,15 @@ class _RegisterScreenState extends State<RegisterScreen>
           },
         ),
       ],
+    );
+  }
+
+  // Método para verificar se o tutorial deve ser mostrado e redirecionar
+  Future<void> _verificarETrocarParaTutorial() async {
+    await TutorialManager.verificarENavegar(
+      context,
+      const OnboardingScreen(),
+      const HomeScreen(index: 1),
     );
   }
 }

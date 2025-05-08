@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../home/home_screen.dart';
-import '../../../bloc/auth/auth_bloc.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -227,17 +225,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _solicitarPermissoes() async {
     try {
       // Solicitar permissões com timeout para evitar travamentos
-      PermissionStatus cameraStatus = await Permission.camera.request().timeout(
+      await Permission.camera.request().timeout(
         Duration(seconds: 5),
         onTimeout: () => PermissionStatus.denied,
       );
 
-      PermissionStatus locationStatus = await Permission.location
-          .request()
-          .timeout(
-            Duration(seconds: 5),
-            onTimeout: () => PermissionStatus.denied,
-          );
+      await Permission.location.request().timeout(
+        Duration(seconds: 5),
+        onTimeout: () => PermissionStatus.denied,
+      );
 
       if (!mounted) return;
 
@@ -266,7 +262,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             final double screenHeight = screenSize.height;
 
             // Calculate responsive sizes
-            final double iconSize = screenWidth * 0.12; // 12% of screen width
+            // 12% of screen width
             final double titleFontSize =
                 screenWidth * 0.05; // 5% of screen width
             final double bodyFontSize =
@@ -550,7 +546,7 @@ class OnboardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    Theme.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 0.0),
@@ -607,7 +603,6 @@ class OnboardingPage extends StatelessWidget {
   }
 
   Widget _buildCustomTitle(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
     final secondaryColor = Theme.of(context).colorScheme.secondary;
 
     return RichText(
@@ -654,8 +649,6 @@ class OnboardingPage extends StatelessWidget {
   }
 
   Widget _buildCustomDescription(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
-
     if (data.description.contains('prefeitura')) {
       // Segunda página
       final parts = data.description.split('prefeitura');

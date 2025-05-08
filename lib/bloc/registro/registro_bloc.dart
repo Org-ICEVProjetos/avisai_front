@@ -147,7 +147,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
        _connectivityService = connectivityService,
        super(RegistroCarregando()) {
     on<CarregarRegistros>(_onCarregarRegistros);
-    on<SincronizarRegistrosPendentes>(_onSincronizarRegistrosPendentes);
+    // on<SincronizarRegistrosPendentes>(_onSincronizarRegistrosPendentes);
     on<RemoverRegistro>(_onRemoverRegistro);
     on<ConexaoAlterada>(_onConexaoAlterada);
     on<CriarNovoRegistroComLocalizacao>(_onCriarNovoRegistroComLocalizacao);
@@ -176,42 +176,42 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
     }
   }
 
-  Future<void> _onSincronizarRegistrosPendentes(
-    SincronizarRegistrosPendentes event,
-    Emitter<RegistroState> emit,
-  ) async {
-    if (!_connectivityService.isOnline) {
-      emit(
-        RegistroErro(
-          mensagem: 'Sem conexão com a internet. Não é possível sincronizar.',
-        ),
-      );
-      return;
-    }
+  // Future<void> _onSincronizarRegistrosPendentes(
+  //   SincronizarRegistrosPendentes event,
+  //   Emitter<RegistroState> emit,
+  // ) async {
+  //   if (!_connectivityService.isOnline) {
+  //     emit(
+  //       RegistroErro(
+  //         mensagem: 'Sem conexão com a internet. Não é possível sincronizar.',
+  //       ),
+  //     );
+  //     return;
+  //   }
 
-    emit(RegistroCarregando());
-    try {
-      final quantidadeSincronizada =
-          await _registroRepository.sincronizarRegistrosPendentes();
+  //   emit(RegistroCarregando());
+  //   try {
 
-      // emit(
-      //   RegistroOperacaoSucesso(
-      //     mensagem:
-      //         'Sincronização concluída: $quantidadeSincronizada registros sincronizados.',
-      //   ),
-      // );
+  //         await _registroRepository.sincronizarRegistrosPendentes();
 
-      final registros = await _registroRepository.obterTodosRegistros();
-      emit(
-        RegistroCarregado(
-          registros: registros,
-          estaOnline: _connectivityService.isOnline,
-        ),
-      );
-    } catch (e) {
-      emit(RegistroErro(mensagem: 'Erro ao sincronizar registros: $e'));
-    }
-  }
+  //     // emit(
+  //     //   RegistroOperacaoSucesso(
+  //     //     mensagem:
+  //     //         'Sincronização concluída: $quantidadeSincronizada registros sincronizados.',
+  //     //   ),
+  //     // );
+
+  //     final registros = await _registroRepository.obterTodosRegistros();
+  //     emit(
+  //       RegistroCarregado(
+  //         registros: registros,
+  //         estaOnline: _connectivityService.isOnline,
+  //       ),
+  //     );
+  //   } catch (e) {
+  //     emit(RegistroErro(mensagem: 'Erro ao sincronizar registros: $e'));
+  //   }
+  // }
 
   Future<void> _onRemoverRegistro(
     RemoverRegistro event,

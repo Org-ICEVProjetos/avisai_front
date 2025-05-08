@@ -23,7 +23,7 @@ class LocalStorageService {
 
   Future<Database> _initDatabase() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String path = join(documentsDirectory.path, 'cidadao_vigilante.db');
+    String path = join(documentsDirectory.path, 'avisai.db');
     return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
 
@@ -41,26 +41,25 @@ class LocalStorageService {
 
     // Tabela de registros
     await db.execute('''
-      CREATE TABLE registros (
-        id TEXT PRIMARY KEY,
-        usuarioId TEXT,
-        usuarioNome TEXT NOT NULL,
-        categoria TEXT NOT NULL,
-        dataHora TEXT NOT NULL,
-        latitude REAL NOT NULL,
-        longitude REAL NOT NULL,
-        endereco TEXT,
-        rua TEXT,
-        bairro TEXT,
-        cidade TEXT,
-        base64Foto TEXT NOT NULL,
-        status TEXT NOT NULL,
-        sincronizado INTEGER NOT NULL,
-        validadoPorUsuarioId TEXT,
-        dataValidacao TEXT,
-        FOREIGN KEY (usuarioId) REFERENCES usuarios (id)
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS registros (
+      id TEXT PRIMARY KEY,
+      usuarioId TEXT,
+      usuarioNome TEXT,
+      categoria TEXT,
+      dataHora TEXT,
+      latitude REAL,
+      longitude REAL,
+      endereco TEXT,
+      rua TEXT,
+      bairro TEXT,
+      cidade TEXT,
+      base64Foto TEXT,
+      status TEXT,
+      sincronizado INTEGER,
+      validadoPorUsuarioId TEXT,
+      dataValidacao TEXT
+    )
+  ''');
   }
 
   // Métodos para Usuário
@@ -99,13 +98,30 @@ class LocalStorageService {
   }
 
   // Métodos para Registro
-  Future<List<Registro>> getRegistros({
-    bool apenasNaoSincronizados = false,
-  }) async {
+  Future<List<Registro>> getRegistros() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('registros');
+    List<Registro> registros = List.generate(maps.length, (i) {
+      return Registro.fromJson(maps[i]);
+    });
+    print(
+      "LocalStorageService: Total de registros locais: ${registros.length}",
+    );
+    for (var reg in registros) {
+      print(
+        "LocalStorageService: Registro local - ID: ${reg.id}, usuarioId: ${reg.usuarioId}, sincronizado: ${reg.sincronizado}",
+      );
+    }
+
+    return registros;
+  }
+
+  // Métodos para Registro
+  Future<List<Registro>> getRegistrosNaoSincronizados() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'registros',
-      where: apenasNaoSincronizados ? 'sincronizado = 0' : null,
+      where: 'sincronizado = 0',
     );
 
     return List.generate(maps.length, (i) {
@@ -146,14 +162,32 @@ class LocalStorageService {
     }).toList();
   }
 
-  Future<String> insertRegistro(Registro registro) async {
+  Future<void> insertRegistro(Registro registro) async {
     final db = await database;
-    await db.insert(
+
+    // Verificar se o registro já existe
+    final existingRecords = await db.query(
       'registros',
-      registro.toJson(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      where: 'id = ?',
+      whereArgs: [registro.id],
     );
-    return registro.id!;
+
+    if (existingRecords.isNotEmpty) {
+      print("Registro com ID ${registro.id} já existe, atualizando...");
+      await db.update(
+        'registros',
+        registro.toJson(),
+        where: 'id = ?',
+        whereArgs: [registro.id],
+      );
+    } else {
+      print("Inserindo novo registro com ID ${registro.id}");
+      await db.insert(
+        'registros',
+        registro.toJson(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
   }
 
   Future<void> updateRegistro(Registro registro) async {
@@ -166,14 +200,16 @@ class LocalStorageService {
     );
   }
 
+  // Na classe LocalStorageService
   Future<void> marcarRegistroComoSincronizado(String registroId) async {
     final db = await database;
     await db.update(
       'registros',
-      {'sincronizado': 1},
+      {'sincronizado': 1}, // Usar 1 em vez de true
       where: 'id = ?',
       whereArgs: [registroId],
     );
+    print("Registro ID $registroId marcado como sincronizado");
   }
 
   Future<void> validarRegistro(String registroId, String validadorId) async {

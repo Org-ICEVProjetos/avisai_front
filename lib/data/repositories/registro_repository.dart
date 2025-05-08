@@ -6,8 +6,6 @@ import '../models/registro.dart';
 import '../../services/location_service.dart';
 import '../../services/connectivity_service.dart';
 import '../providers/api_provider.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
 
 class RegistroRepository {
   final LocalStorageService _localStorage;
@@ -68,28 +66,27 @@ class RegistroRepository {
       }
 
       // Atualizar o registro com os novos dados de endereço, se disponíveis
-      final registroAtualizado = registro.copyWith(
-        endereco: endereco,
-        rua: rua,
-        bairro: bairro,
-        cidade: cidade,
-      );
+      if (_connectivityService.isOnline) {
+        final registroAtualizado = registro.copyWith(
+          endereco: endereco,
+          rua: rua,
+          bairro: bairro,
+          cidade: cidade,
+        );
 
-      // Salvar as atualizações localmente primeiro
-      if (endereco != registro.endereco ||
-          rua != registro.rua ||
-          bairro != registro.bairro ||
-          cidade != registro.cidade) {
-        await _localStorage.updateRegistro(registroAtualizado);
+        // Salvar as atualizações localmente primeiro
+        if (endereco != registro.endereco ||
+            rua != registro.rua ||
+            bairro != registro.bairro ||
+            cidade != registro.cidade) {
+          await _localStorage.updateRegistro(registroAtualizado);
+        }
+        await _apiProvider.enviarRegistro(registroAtualizado);
+        await _localStorage.marcarRegistroComoSincronizado(registro.id!);
+        return true;
       }
 
-      // Enviar para a API
-      await _apiProvider.enviarRegistro(registroAtualizado);
-
-      // Atualizar o status de sincronização no banco local
-      await _localStorage.marcarRegistroComoSincronizado(registro.id!);
-
-      return true;
+      return false;
     } catch (e) {
       print('Erro ao sincronizar registro: $e');
       return false;
@@ -101,9 +98,8 @@ class RegistroRepository {
     if (!_connectivityService.isOnline) return 0;
 
     // Buscar todos os registros não sincronizados
-    final registrosNaoSincronizados = await _localStorage.getRegistros(
-      apenasNaoSincronizados: true,
-    );
+    final registrosNaoSincronizados =
+        await _localStorage.getRegistrosNaoSincronizados();
 
     int sincronizados = 0;
 
@@ -169,19 +165,22 @@ class RegistroRepository {
       sincronizado: false, // Sempre false inicialmente
     );
 
-    // Salvar no armazenamento local - esta parte é crítica e deve funcionar
+    // Salvar no armazenamento local
     await _localStorage.insertRegistro(novoRegistro);
+    print(
+      "Registro criado e salvo localmente: ID=${novoRegistro.id}, usuarioId=${novoRegistro.usuarioId}",
+    );
 
     // Tentar sincronizar com o servidor, se estiver online
-    // Se falhar, isso será tratado no bloco catch do BLoC
     if (_connectivityService.isOnline) {
       try {
-        await _sincronizarRegistro(novoRegistro);
-        await _apiProvider.enviarRegistro(novoRegistro);
+        // Usar apenas _sincronizarRegistro, não chamar a API diretamente depois
+        final sincronizou = await _sincronizarRegistro(novoRegistro);
+        print(
+          "Tentativa de sincronização: ${sincronizou ? 'Sucesso' : 'Falha'}",
+        );
       } catch (e) {
-        // Apenas logamos o erro, mas não lançamos para cima
         print('Erro ao sincronizar com a API (ignorado): $e');
-        // A sincronização será tentada novamente mais tarde
       }
     }
 
@@ -194,31 +193,18 @@ class RegistroRepository {
       try {
         // Tentar buscar dados do servidor
         final registrosServidor = await _apiProvider.obterRegistros();
-
         // Atualizar banco local com dados do servidor
         for (var registro in registrosServidor) {
-          await _localStorage.insertRegistro(
-            registro.copyWith(sincronizado: true),
-          );
+          await _localStorage.insertRegistro(registro);
         }
-
-        // Retornar dados do banco local (que agora está atualizado com os dados do servidor)
         return await _localStorage.getRegistros();
       } catch (e) {
         print('Erro ao buscar registros do servidor: $e');
-        // Em caso de erro na comunicação com o servidor, cair no fallback local
         return await _localStorage.getRegistros();
       }
     } else {
-      // Se estiver offline, buscar apenas os dados locais
       return await _localStorage.getRegistros();
     }
-  }
-
-  // Obter registros do usuário
-  Future<List<Registro>> obterRegistrosDoUsuario(String usuarioId) async {
-    final registros = await _localStorage.getRegistros();
-    return registros.where((r) => r.usuarioId == usuarioId).toList();
   }
 
   // Remover um registro

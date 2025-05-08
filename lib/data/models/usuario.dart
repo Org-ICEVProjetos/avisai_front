@@ -35,12 +35,38 @@ class Usuario {
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
     return Usuario(
-      id: json['id'],
-      nome: json['nome'],
-      cpf: json['cpf'],
-      email: json['email'],
+      id: json['id'] ?? '',
+      nome: _corrigirTextoAcentuado(json['name'] ?? ''),
+      cpf: json['cpf'] ?? '',
+      email: json['email'] ?? '',
       senha: json['senha'] ?? '',
     );
+  }
+
+  // Adicionar este método estático na classe Usuario
+  static String _corrigirTextoAcentuado(String texto) {
+    // Mapeamento de padrões de texto com codificação incorreta
+    final Map<String, String> substituicoes = {
+      'Ã£': 'ã',
+      'Ã¡': 'á',
+      'Ã©': 'é',
+      'Ã³': 'ó',
+      'Ãº': 'ú',
+      'Ã§': 'ç',
+      'Ã': 'Á',
+      'Ãª': 'ê',
+      'Ã¢': 'â',
+      'Ãµ': 'õ',
+      'Ã­': 'í',
+      'Ã´': 'ô',
+    };
+
+    String resultado = texto;
+    substituicoes.forEach((padrao, substituto) {
+      resultado = resultado.replaceAll(padrao, substituto);
+    });
+
+    return resultado;
   }
 
   @override

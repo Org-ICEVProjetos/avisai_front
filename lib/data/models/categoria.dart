@@ -73,11 +73,6 @@ class Categoria {
   }
 
   @override
-  String toString() {
-    return 'Categoria{id: $id, nome: $nome, ativo: $ativo}';
-  }
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is Categoria && other.id == id;

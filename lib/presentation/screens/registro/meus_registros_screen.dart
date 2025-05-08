@@ -19,7 +19,7 @@ class MeusRegistrosScreen extends StatefulWidget {
 class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
   StatusValidacao? _filtroStatus;
   CategoriaIrregularidade? _filtroCategoria;
-  bool _apenasNaoSincronizados = false;
+  final bool _apenasNaoSincronizados = false;
 
   @override
   void initState() {
@@ -46,6 +46,16 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
 
   // Filtra a lista de registros com base nos filtros aplicados
   List<Registro> _filtrarRegistros(List<Registro> registros) {
+    if (registros.isEmpty) {
+      print("A lista de registros está vazia!");
+      return [];
+    }
+
+    for (var reg in registros) {
+      print(
+        "Registro - ID: ${reg.id}, usuarioId: ${reg.usuarioId}, categoria: ${reg.categoria}",
+      );
+    }
     return registros.where((registro) {
       // Filtrar por usuário
       if (registro.usuarioId != widget.usuarioId) {
@@ -775,6 +785,8 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
           },
         ),
       );
+    } else if (state is RegistroOperacaoSucesso) {
+      return const Center(child: CircularProgressIndicator());
     } else {
       return const Center(
         child: Text('Erro ao carregar registros. Tente novamente.'),

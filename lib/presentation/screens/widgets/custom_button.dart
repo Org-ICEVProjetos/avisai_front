@@ -10,7 +10,7 @@ class CustomButton extends StatelessWidget {
   final double textSize;
 
   const CustomButton({
-    Key? key,
+    super.key,
     required this.texto,
     required this.onPressed,
     this.icone,
@@ -18,7 +18,7 @@ class CustomButton extends StatelessWidget {
     this.fullWidth = true,
     this.outlined = false,
     this.textSize = 16.0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -59,6 +59,25 @@ class RecuperacaoSenhaSolicitada extends AuthEvent {
   List<Object> get props => [cpf, email];
 }
 
+class VerificarTokenSenhaSolicitado extends AuthEvent {
+  final String token;
+
+  const VerificarTokenSenhaSolicitado({required this.token});
+
+  @override
+  List<Object> get props => [token];
+}
+
+class AlterarSenhaSolicitada extends AuthEvent {
+  final String senha;
+  final String token;
+
+  const AlterarSenhaSolicitada({required this.senha, required this.token});
+
+  @override
+  List<Object> get props => [senha, token];
+}
+
 class LogoutSolicitado extends AuthEvent {}
 
 abstract class AuthState extends Equatable {
@@ -101,6 +120,10 @@ class AuthErro extends AuthState {
 
 class RecuperacaoSenhaEnviada extends AuthState {}
 
+class TokenSenhaValidado extends AuthState {}
+
+class SenhaAlterada extends AuthState {}
+
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
 
@@ -111,6 +134,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LoginSolicitado>(_onLoginSolicitado);
     on<RegistroSolicitado>(_onRegistroSolicitado);
     on<RecuperacaoSenhaSolicitada>(_onRecuperacaoSenhaSolicitada);
+    on<VerificarTokenSenhaSolicitado>(_onVerificarTokenSenhaSolicitado);
+    on<AlterarSenhaSolicitada>(_onAlterarSenhaSolicitada);
     on<LogoutSolicitado>(_onLogoutSolicitado);
     on<LoginAutomaticoSolicitado>(_onLoginAutomaticoSolicitado);
   }
@@ -164,13 +189,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(Carregando());
     try {
       final usuario = await _authRepository.login(event.cpf, event.senha);
-      // final usuario = Usuario(
-      //   id: "123",
-      //   nome: "João",
-      //   cpf: "",
-      //   email: "",
-      //   senha: "",
-      // );
       emit(Autenticado(usuario));
     } catch (e) {
       emit(AuthErro(e.toString()));
@@ -203,6 +221,43 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await _authRepository.recuperarSenha(event.cpf, event.email);
       emit(RecuperacaoSenhaEnviada());
+    } catch (e) {
+      emit(AuthErro(e.toString()));
+    }
+  }
+
+  Future<void> _onVerificarTokenSenhaSolicitado(
+    VerificarTokenSenhaSolicitado event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(Carregando());
+    try {
+      final isValid = await _authRepository.validarTokenSenha(event.token);
+      if (isValid) {
+        emit(TokenSenhaValidado());
+      } else {
+        emit(AuthErro('Código inválido ou expirado'));
+      }
+    } catch (e) {
+      emit(AuthErro(e.toString()));
+    }
+  }
+
+  Future<void> _onAlterarSenhaSolicitada(
+    AlterarSenhaSolicitada event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(Carregando());
+    try {
+      final success = await _authRepository.alterarSenha(
+        event.senha,
+        event.token,
+      );
+      if (success) {
+        emit(SenhaAlterada());
+      } else {
+        emit(AuthErro('Não foi possível alterar a senha'));
+      }
     } catch (e) {
       emit(AuthErro(e.toString()));
     }

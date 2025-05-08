@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../bloc/auth/auth_bloc.dart';
-import '../../../bloc/connectivity/connectivity_bloc.dart';
-import '../../../bloc/registro/registro_bloc.dart';
 import '../registro/novo_registro_screen.dart';
 import '../registro/meus_registros_screen.dart';
 import '../mapa/mapa_irregularidades_screen.dart';
@@ -25,8 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _indiceAbaSelecionada = widget.index;
-    // Carregar registros quando a tela for inicializada
-    context.read<RegistroBloc>().add(CarregarRegistros());
+
     solicitarPermissaoCamera();
   }
 

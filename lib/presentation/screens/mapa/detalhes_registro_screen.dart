@@ -246,37 +246,19 @@ class DetalheRegistroScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder:
-          (context) => Dialog(
-            insetPadding: const EdgeInsets.all(12),
-            child: Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.8,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // Botão fechar
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
+          (_) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.all(10),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: InteractiveViewer(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.memory(
+                    base64Decode(base64Foto),
+                    fit: BoxFit.contain,
                   ),
-
-                  // Imagem expandida com zoom
-                  Flexible(
-                    child: InteractiveViewer(
-                      minScale: 0.5,
-                      maxScale: 4.0,
-                      child: Image.memory(
-                        base64Decode(base64Foto),
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-
-                  // Espaço na parte inferior
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
             ),
           ),

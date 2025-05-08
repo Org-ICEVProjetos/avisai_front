@@ -37,10 +37,15 @@ class AuthRepository {
     try {
       final resultado = await _apiProvider.login(cpf, senha);
       final usuario = resultado['usuario'] as Usuario;
-      final token = resultado['token'] as String;
+      final token = resultado['accessToken'] as String;
+      final refreshToken = resultado['refreshToken'] as String;
 
       // Salvar dados localmente
-      await UserLocalStorage.salvarUsuario(usuario, token);
+      await UserLocalStorage.salvarUsuario(
+        usuario,
+        token,
+        refreshToken: refreshToken,
+      );
 
       return usuario;
     } catch (e) {
@@ -68,7 +73,7 @@ class AuthRepository {
 
       final resultado = await _apiProvider.registrarUsuario(usuario, senha);
       final usuarioRegistrado = resultado['usuario'] as Usuario;
-      final token = resultado['token'] as String;
+      final token = resultado['accessToken'] as String;
 
       // Salvar dados localmente
       await UserLocalStorage.salvarUsuario(usuarioRegistrado, token);
@@ -85,6 +90,22 @@ class AuthRepository {
   Future<bool> recuperarSenha(String cpf, String email) async {
     try {
       return await _apiProvider.recuperarSenha(cpf, email);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<bool> validarTokenSenha(String token) async {
+    try {
+      return await _apiProvider.validarTokenSenha(token);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<bool> alterarSenha(String senha, String token) async {
+    try {
+      return await _apiProvider.alterarSenha(senha, token);
     } catch (e) {
       rethrow;
     }

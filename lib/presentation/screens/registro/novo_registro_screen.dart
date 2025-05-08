@@ -38,6 +38,8 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
   CategoriaIrregularidade _categoriaIrregularidade =
       CategoriaIrregularidade.buraco;
   Position? _localizacaoCaptura;
+  // Adicione esta variável ao estado da sua classe
+  bool _flashAtivado = false;
 
   // Controlador de animação
   late AnimationController _buttonAnimationController;
@@ -176,7 +178,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       print('Inicializando controlador de câmera...');
       _cameraController = CameraController(
         _cameras![0],
-        ResolutionPreset.medium, // Usar resolução média para melhor performance
+        ResolutionPreset.veryHigh,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
@@ -201,6 +203,37 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
           _mensagemErro = 'Erro ao inicializar câmera: $e';
         });
       }
+    }
+  }
+
+  // Adicione este método à sua classe para alternar o estado do flash
+  Future<void> _alternarFlash() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
+    try {
+      // Alternar entre os modos de flash disponíveis
+      if (_flashAtivado) {
+        await _cameraController!.setFlashMode(FlashMode.off);
+      } else {
+        await _cameraController!.setFlashMode(FlashMode.torch);
+      }
+
+      setState(() {
+        _flashAtivado = !_flashAtivado;
+      });
+    } catch (e) {
+      print('Erro ao alternar flash: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Erro ao controlar o flash. O dispositivo pode não suportar esta função.',
+          ),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -542,19 +575,55 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
           ),
 
           // Botão de galeria no canto inferior direito
+          // Positioned(
+          //   bottom: 40,
+          //   right: 24,
+          //   child: GestureDetector(
+          //     onTap: _selecionarDaGaleria,
+          //     child: Container(
+          //       width: 50,
+          //       height: 50,
+          //       decoration: BoxDecoration(
+          //         color: const Color(0xFF002569),
+          //         shape: BoxShape.circle,
+          //       ),
+          //       child: Icon(Icons.photo_library, color: Colors.white, size: 24),
+          //     ),
+          //   ),
+          // ),
           Positioned(
-            bottom: 40,
+            top: 24,
             right: 24,
             child: GestureDetector(
-              onTap: _selecionarDaGaleria,
+              onTap: _alternarFlash,
               child: Container(
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF002569),
+                  color:
+                      _flashAtivado
+                          ? Colors
+                              .amber // Cor quando ligado
+                          : Colors.black.withOpacity(
+                            0.6,
+                          ), // Cor quando desligado
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          _flashAtivado
+                              ? Colors.amber.withOpacity(0.5)
+                              : Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
-                child: Icon(Icons.photo_library, color: Colors.white, size: 24),
+                child: Icon(
+                  _flashAtivado ? Icons.flash_on : Icons.flash_off,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
             ),
           ),
