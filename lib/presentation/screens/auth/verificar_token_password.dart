@@ -19,10 +19,20 @@ class VerifyTokenScreen extends StatefulWidget {
 class _VerifyTokenScreenState extends State<VerifyTokenScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _tokenController = TextEditingController();
-  final _tokenFieldKey = GlobalKey<FormFieldState>();
+
+  // 6 controllers para os 6 dígitos do token
+  final List<TextEditingController> _digitControllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
+
+  // 6 focus nodes para gerenciar o foco entre os campos
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+
+  // Para controlar o key listener
+  final FocusNode _rootNode = FocusNode();
+
   bool _carregando = false;
-  bool _tokenValidado = false;
   int _secondsRemaining = 0;
   Timer? _timer;
 
@@ -111,11 +121,30 @@ class _VerifyTokenScreenState extends State<VerifyTokenScreen>
 
     // Start the timer for resend button
     _startResendTimer();
+
+    // Foca no primeiro campo quando a tela é carregada
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _focusNodes[0].requestFocus();
+    });
+  }
+
+  bool _todosDigitosPreenchidos() {
+    return _digitControllers.every((controller) => controller.text.isNotEmpty);
+  }
+
+  String _getCompleteToken() {
+    return _digitControllers.map((controller) => controller.text).join();
   }
 
   @override
   void dispose() {
-    _tokenController.dispose();
+    for (var controller in _digitControllers) {
+      controller.dispose();
+    }
+    for (var node in _focusNodes) {
+      node.dispose();
+    }
+    _rootNode.dispose();
     _animationController.dispose();
     _timer?.cancel();
     super.dispose();
@@ -145,7 +174,7 @@ class _VerifyTokenScreenState extends State<VerifyTokenScreen>
       });
 
       context.read<AuthBloc>().add(
-        VerificarTokenSenhaSolicitado(token: _tokenController.text),
+        VerificarTokenSenhaSolicitado(token: _getCompleteToken()),
       );
     }
   }
@@ -161,19 +190,20 @@ class _VerifyTokenScreenState extends State<VerifyTokenScreen>
       );
 
       _startResendTimer();
-    }
-  }
 
-  String? _validarToken(String? valor) {
-    if (valor == null || valor.isEmpty) {
-      return 'Por favor, digite o código recebido por e-mail';
-    }
+      // Limpar os campos do token quando reenviar
+      for (var controller in _digitControllers) {
+        controller.clear();
+      }
 
-    if (valor.length < 6) {
-      return 'O código deve conter pelo menos 6 caracteres';
+      // Atraso curto para aguardar o processamento do envio
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          // Foca no primeiro campo
+          _focusNodes[0].requestFocus();
+        }
+      });
     }
-
-    return null;
   }
 
   @override
@@ -227,7 +257,6 @@ class _VerifyTokenScreenState extends State<VerifyTokenScreen>
           } else if (state is TokenSenhaValidado) {
             setState(() {
               _carregando = false;
-              _tokenValidado = true;
             });
 
             // Navegar para a tela de alteração de senha
@@ -235,7 +264,7 @@ class _VerifyTokenScreenState extends State<VerifyTokenScreen>
               MaterialPageRoute(
                 builder:
                     (context) =>
-                        ChangePasswordScreen(token: _tokenController.text),
+                        ChangePasswordScreen(token: _getCompleteToken()),
               ),
             );
           } else if (state is RecuperacaoSenhaEnviada) {
@@ -299,65 +328,80 @@ class _VerifyTokenScreenState extends State<VerifyTokenScreen>
                     ),
                     const SizedBox(height: 32),
 
-                    // Formulário com animação
+                    // NOVA implementação do campo de token com 6 caixas
                     Form(
                       key: _formKey,
                       child: SlideTransition(
                         position: _slideFormAnimation,
                         child: Column(
                           children: [
-                            Material(
-                              elevation: 5,
-                              borderRadius: BorderRadius.circular(30),
-                              shadowColor: Colors.black.withOpacity(0.4),
-                              color: Colors.white,
-                              child: TextFormField(
-                                key: _tokenFieldKey,
-                                controller: _tokenController,
-                                keyboardType: TextInputType.text,
-                                validator: _validarToken,
-                                style: theme.textTheme.bodyLarge,
-                                textAlign: TextAlign.center,
-                                decoration: InputDecoration(
-                                  labelText: 'Código de verificação',
-                                  labelStyle: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[500],
-                                  ),
-                                  hintText: "Digite o código recebido",
-                                  hintStyle: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[500],
-                                  ),
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.never,
-                                  fillColor: Colors.white,
+                            // Label para o campo de código
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 16.0,
+                                top: 3.0,
+                                left: 5.0,
+                              ),
+                              child: Text(
+                                'Digite o código de 6 dígitos',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[800],
                                 ),
-                                autovalidateMode:
-                                    AutovalidateMode.onUserInteraction,
                               ),
                             ),
-                            Builder(
-                              builder: (context) {
-                                final errorText =
-                                    _tokenFieldKey.currentState?.errorText;
-                                if (errorText != null && errorText.isNotEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(
-                                      left: 12.0,
-                                      top: 4.0,
+
+                            // Row com 6 caixas de entrada - TORNANDO RESPONSIVO
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                // Calculando o tamanho ideal para os campos
+                                // Considere o espaço total disponível e deixe um pequeno espaço entre eles
+                                final double availableWidth =
+                                    constraints.maxWidth;
+
+                                // Determine o tamanho máximo do campo e o espaçamento entre eles
+                                // Vamos garantir que haja pelo menos 8 pixels entre os campos
+                                final double spacing = 8;
+                                final int numBoxes = 6;
+                                final double totalSpacing =
+                                    spacing * (numBoxes - 1);
+
+                                // Calcule o tamanho do campo, com um mínimo de 40 e máximo de 50
+                                double boxWidth =
+                                    (availableWidth - totalSpacing) / numBoxes;
+                                boxWidth = boxWidth.clamp(40, 50);
+
+                                // Ajuste o espaçamento horizontal final baseado no tamanho dos campos
+                                final double horizontalPadding =
+                                    (availableWidth -
+                                        (boxWidth * numBoxes + totalSpacing)) /
+                                    2;
+
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    left:
+                                        (horizontalPadding.clamp(
+                                              0,
+                                              double.infinity,
+                                            ) +
+                                            5), // Corrige o deslocamento para a esquerda
+                                    right: horizontalPadding.clamp(
+                                      0,
+                                      double.infinity,
                                     ),
-                                    child: Text(
-                                      errorText,
-                                      style: const TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 12,
-                                      ),
+                                    top: 5, // Corrige o deslocamento para baixo
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: List.generate(
+                                      6,
+                                      (index) =>
+                                          _buildDigitBox(index, boxWidth),
                                     ),
-                                  );
-                                } else {
-                                  return const SizedBox.shrink();
-                                }
+                                  ),
+                                );
                               },
                             ),
                           ],
@@ -365,7 +409,7 @@ class _VerifyTokenScreenState extends State<VerifyTokenScreen>
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
                     // Botão Verificar Código com animação
                     SlideTransition(
@@ -475,6 +519,91 @@ class _VerifyTokenScreenState extends State<VerifyTokenScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // Widget para cada caixa de dígito
+  Widget _buildDigitBox(int index, double width) {
+    return Container(
+      width: width,
+      height: width * 1.2, // Mantém a proporção
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: _digitControllers[index],
+        focusNode: _focusNodes[index],
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          LengthLimitingTextInputFormatter(1),
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white,
+
+          // Ajustando o padding interno para corrigir o desalinhamento dos números
+          contentPadding: const EdgeInsets.only(
+            top: 11, // Movendo o texto um pouco para cima
+            bottom: 11,
+            left: 3.5, // Corrigindo o deslocamento para a esquerda
+            right: 0,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: Theme.of(context).primaryColor,
+              width: 2,
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+        ),
+        onChanged: (value) {
+          // Se o dígito foi digitado, mover para o próximo campo
+          if (value.isNotEmpty) {
+            // Se não for o último campo, mover para o próximo
+            if (index < 5) {
+              _focusNodes[index + 1].requestFocus();
+            } else {
+              // Se for o último campo, remover o foco
+              FocusScope.of(context).unfocus();
+
+              // Verificar se todos os campos estão preenchidos para validar
+              if (_todosDigitosPreenchidos()) {
+                // Opcional: verificar token automaticamente após um curto delay
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) _verificarToken();
+                });
+              }
+            }
+          }
+          // Se o campo foi apagado, voltar para o anterior
+          else if (value.isEmpty && index > 0) {
+            _focusNodes[index - 1].requestFocus();
+          }
+        },
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return ''; // Validação leve, só para marcar o campo
+          }
+          return null;
+        },
       ),
     );
   }

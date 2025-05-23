@@ -195,6 +195,8 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         return Icons.lightbulb_outline;
       case CategoriaIrregularidade.lixoIrregular:
         return Icons.delete_outline;
+      case CategoriaIrregularidade.outro:
+        return Icons.abc;
     }
   }
 
@@ -206,7 +208,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         return Icons.check_circle;
       case StatusValidacao.naoValidado:
         return Icons.cancel;
-      case StatusValidacao.emExecucao:
+      case StatusValidacao.emRota:
         return Icons.engineering;
       case StatusValidacao.resolvido:
         return Icons.task_alt;
@@ -221,7 +223,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         return Colors.green;
       case StatusValidacao.naoValidado:
         return Colors.red;
-      case StatusValidacao.emExecucao:
+      case StatusValidacao.emRota:
         return Theme.of(context).colorScheme.primary;
       case StatusValidacao.resolvido:
         return Colors.green.shade800;
@@ -386,8 +388,8 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         return 'Não validado';
       case StatusValidacao.pendente:
         return 'Pendente';
-      case StatusValidacao.emExecucao:
-        return 'Em execução';
+      case StatusValidacao.emRota:
+        return 'Em rota';
       case StatusValidacao.resolvido:
         return 'Resolvido';
     }
@@ -461,6 +463,8 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         return Theme.of(context).colorScheme.primary;
       case CategoriaIrregularidade.lixoIrregular:
         return Colors.green;
+      case CategoriaIrregularidade.outro:
+        return Colors.black;
     }
   }
 
@@ -472,6 +476,8 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         return 'Poste com defeito';
       case CategoriaIrregularidade.lixoIrregular:
         return 'Descarte irregular de lixo';
+      case CategoriaIrregularidade.outro:
+        return 'Outro';
     }
   }
 

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:avisai4/services/user_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/registro.dart';
 import '../models/usuario.dart';
@@ -68,7 +69,9 @@ class ApiProvider {
       // Verificar se expira em menos de 30 segundos (margem de segurança)
       return currentTime >= (exp - 30);
     } catch (e) {
-      print('Erro ao decodificar token: $e');
+      if (kDebugMode) {
+        print('Erro ao decodificar token: $e');
+      }
       return true; // Em caso de erro, consideramos expirado
     }
   }
@@ -94,7 +97,7 @@ class ApiProvider {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final newToken = data['token'];
+        final newToken = data['accessToken'];
         final newRefreshToken = data['refreshToken']; // pode existir ou não
 
         // Atualiza tokens na memória
@@ -112,11 +115,15 @@ class ApiProvider {
 
         return true;
       } else {
-        print('Falha ao atualizar token: ${response.statusCode}');
+        if (kDebugMode) {
+          print('Falha ao atualizar token: ${response.statusCode}');
+        }
         return false;
       }
     } catch (e) {
-      print('Erro ao atualizar token: $e');
+      if (kDebugMode) {
+        print('Erro ao atualizar token: $e');
+      }
       return false;
     }
   }
@@ -135,9 +142,7 @@ class ApiProvider {
       }
 
       // Tenta recuperar o refresh token se necessário
-      if (_refreshToken == null) {
-        _refreshToken = await UserLocalStorage.obterRefreshToken();
-      }
+      _refreshToken ??= await UserLocalStorage.obterRefreshToken();
     }
 
     // Se temos token e está expirado, tenta refresh
@@ -193,8 +198,12 @@ class ApiProvider {
         body: jsonEncode({'cpf': limparCPF(cpf), 'password': senha}),
       );
 
-      print("Body: ${response.body}");
-      print("Status code: ${response.statusCode}");
+      if (kDebugMode) {
+        print("Body: ${response.body}");
+      }
+      if (kDebugMode) {
+        print("Status code: ${response.statusCode}");
+      }
 
       if (response.statusCode == 200) {
         final dados = jsonDecode(response.body);
@@ -216,7 +225,7 @@ class ApiProvider {
       } else {
         final erro = jsonDecode(response.body);
         throw ApiException(
-          erro['mensagem'] ?? 'Erro ao fazer login',
+          _corrigirTextoAcentuado(erro['message']),
           statusCode: response.statusCode,
         );
       }
@@ -251,7 +260,9 @@ class ApiProvider {
         }),
       );
 
-      print("Status code: ${response.statusCode}");
+      if (kDebugMode) {
+        print("Status code: ${response.statusCode}");
+      }
 
       if (response.statusCode == 201) {
         // Adicionando charset na decodificação do JSON
@@ -286,7 +297,7 @@ class ApiProvider {
         if (response.body.isNotEmpty) {
           final erro = jsonDecode(utf8.decode(response.bodyBytes));
           throw ApiException(
-            erro['mensagem'] ?? 'Erro ao registrar usuário',
+            _corrigirTextoAcentuado(erro['message']),
             statusCode: response.statusCode,
           );
         } else {
@@ -297,7 +308,9 @@ class ApiProvider {
         }
       }
     } catch (e) {
-      print(e.toString());
+      if (kDebugMode) {
+        print(e.toString());
+      }
       if (e is ApiException) rethrow;
       throw ApiException('Erro de conexão: ${e.toString()}');
     }
@@ -315,6 +328,7 @@ class ApiProvider {
       'Ã§': 'ç',
       'Ã': 'Á',
       'Ãª': 'ê',
+      'Áª': 'ê',
       'Ã¢': 'â',
       'Ãµ': 'õ',
       'Ã­': 'í',
@@ -348,7 +362,7 @@ class ApiProvider {
       } else {
         final erro = jsonDecode(response.body);
         throw ApiException(
-          erro['mensagem'] ?? 'Erro ao recuperar senha',
+          _corrigirTextoAcentuado(erro['message']),
           statusCode: response.statusCode,
         );
       }
@@ -377,7 +391,7 @@ class ApiProvider {
       } else {
         final erro = jsonDecode(response.body);
         throw ApiException(
-          erro['mensagem'] ?? 'Erro ao validar código',
+          _corrigirTextoAcentuado(erro['message']),
           statusCode: response.statusCode,
         );
       }
@@ -397,16 +411,23 @@ class ApiProvider {
             () => http.post(
               url,
               headers: headers,
-              body: jsonEncode({'password': senha}),
+              body: jsonEncode({'newPassword': senha}),
             ),
       );
+
+      if (kDebugMode) {
+        print("Body: ${response.body}");
+      }
+      if (kDebugMode) {
+        print("Status code: ${response.statusCode}");
+      }
 
       if (response.statusCode == 200) {
         return true;
       } else {
         final erro = jsonDecode(response.body);
         throw ApiException(
-          erro['mensagem'] ?? 'Erro ao trocar de senha',
+          _corrigirTextoAcentuado(erro['message']),
           statusCode: response.statusCode,
         );
       }
@@ -429,7 +450,9 @@ class ApiProvider {
 
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      print('Erro ao fazer logout no servidor: $e');
+      if (kDebugMode) {
+        print('Erro ao fazer logout no servidor: $e');
+      }
       return false;
     }
   }
@@ -441,7 +464,14 @@ class ApiProvider {
       // Usar toApiJson() em vez de toJson()
       final dadosRegistro = registro.toApiJson();
 
-      print('Enviando para $url');
+      if (kDebugMode) {
+        print('Enviando para $url');
+      }
+      if (kDebugMode) {
+        print(
+          'Coordenadas: ${dadosRegistro['latitude']},${dadosRegistro['longitude']}',
+        );
+      }
 
       // Enviar com validação de token
       final response = await _requestWithTokenValidation(
@@ -454,6 +484,7 @@ class ApiProvider {
       );
 
       print("Status code: ${response.statusCode}");
+      print("BODYYY: ${response.body}");
 
       if (response.statusCode == 201) {
         final dados = jsonDecode(response.body);
@@ -464,7 +495,7 @@ class ApiProvider {
         if (body.isNotEmpty) {
           try {
             final erro = jsonDecode(body);
-            mensagem = erro['mensagem'] ?? mensagem;
+            mensagem = _corrigirTextoAcentuado(erro['message']);
           } catch (_) {
             mensagem = 'Erro ${response.statusCode}: $body';
           }
@@ -507,9 +538,11 @@ class ApiProvider {
           try {
             final registro = Registro.fromJson(item as Map<String, dynamic>);
             registros.add(registro);
-            print(
-              "Registro adicionado: ID=${registro.id}, usuarioId=${registro.usuarioId}",
-            );
+            if (kDebugMode) {
+              print(
+                "Registro adicionado: ID=${registro.id}, usuarioId=${registro.usuarioId}",
+              );
+            }
           } catch (e) {
             print("Erro ao converter registro: $e");
           }
@@ -519,7 +552,7 @@ class ApiProvider {
       } else {
         final erro = jsonDecode(utf8.decode(response.bodyBytes));
         throw ApiException(
-          erro['mensagem'] ?? 'Erro ao obter registros',
+          _corrigirTextoAcentuado(erro['message']),
           statusCode: response.statusCode,
         );
       }
@@ -544,7 +577,7 @@ class ApiProvider {
       } else {
         final erro = jsonDecode(response.body);
         throw ApiException(
-          erro['mensagem'] ?? 'Erro ao remover registro',
+          _corrigirTextoAcentuado(erro['message']),
           statusCode: response.statusCode,
         );
       }

@@ -40,57 +40,56 @@ class RegistroRepository {
 
   // Sincroniza um registro com o servidor
   Future<bool> _sincronizarRegistro(Registro registro) async {
-    try {
-      // Primeiro, verificar se é necessário atualizar os dados de endereço
-      String? endereco = registro.endereco;
-      String? rua = registro.rua;
-      String? bairro = registro.bairro;
-      String? cidade = registro.cidade;
+    // Primeiro, verificar se é necessário atualizar os dados de endereço
+    String? endereco = registro.endereco;
+    String? rua = registro.rua;
+    String? bairro = registro.bairro;
+    String? cidade = registro.cidade;
 
-      // Se os dados de endereço estão indisponíveis e agora temos internet,
-      // vamos tentar obter o endereço usando as coordenadas salvas
-      if ((endereco == null || endereco == 'Não disponível') &&
-          _connectivityService.isOnline) {
-        try {
-          final dadosEndereco = await _locationService
-              .getAddressFromCoordinates(registro.latitude, registro.longitude);
-
-          endereco = dadosEndereco['endereco'];
-          rua = dadosEndereco['rua'];
-          bairro = dadosEndereco['bairro'];
-          cidade = dadosEndereco['cidade'];
-        } catch (e) {
-          print('Erro ao obter endereço atualizado: $e');
-          // Manter os valores originais em caso de erro
-        }
-      }
-
-      // Atualizar o registro com os novos dados de endereço, se disponíveis
-      if (_connectivityService.isOnline) {
-        final registroAtualizado = registro.copyWith(
-          endereco: endereco,
-          rua: rua,
-          bairro: bairro,
-          cidade: cidade,
+    // Se os dados de endereço estão indisponíveis e agora temos internet,
+    // vamos tentar obter o endereço usando as coordenadas salvas
+    if ((endereco == null || endereco == 'Não disponível') &&
+        _connectivityService.isOnline) {
+      try {
+        final dadosEndereco = await _locationService.getAddressFromCoordinates(
+          registro.latitude,
+          registro.longitude,
         );
 
-        // Salvar as atualizações localmente primeiro
-        if (endereco != registro.endereco ||
-            rua != registro.rua ||
-            bairro != registro.bairro ||
-            cidade != registro.cidade) {
-          await _localStorage.updateRegistro(registroAtualizado);
-        }
-        await _apiProvider.enviarRegistro(registroAtualizado);
-        await _localStorage.marcarRegistroComoSincronizado(registro.id!);
-        return true;
+        endereco = dadosEndereco['endereco'];
+        rua = dadosEndereco['rua'];
+        bairro = dadosEndereco['bairro'];
+        cidade = dadosEndereco['cidade'];
+      } catch (e) {
+        print('Erro ao obter endereço atualizado: $e');
+        // Manter os valores originais em caso de erro
+      }
+    }
+
+    // Atualizar o registro com os novos dados de endereço, se disponíveis
+    if (_connectivityService.isOnline) {
+      final registroAtualizado = registro.copyWith(
+        endereco: endereco,
+        rua: rua,
+        bairro: bairro,
+        cidade: cidade,
+      );
+
+      // Salvar as atualizações localmente primeiro
+      if (endereco != registro.endereco ||
+          rua != registro.rua ||
+          bairro != registro.bairro ||
+          cidade != registro.cidade) {
+        await _localStorage.updateRegistro(registroAtualizado);
       }
 
-      return false;
-    } catch (e) {
-      print('Erro ao sincronizar registro: $e');
-      return false;
+      // A exceção será propagada se houver erro
+      await _apiProvider.enviarRegistro(registroAtualizado);
+      await _localStorage.marcarRegistroComoSincronizado(registro.id!);
+      return true;
     }
+
+    return false;
   }
 
   // Tenta sincronizar todos os registros pendentes
@@ -112,7 +111,6 @@ class RegistroRepository {
     return sincronizados;
   }
 
-  // Criar um novo registro
   Future<Registro> criarRegistro({
     required String usuarioId,
     required String usuarioNome,
@@ -120,6 +118,7 @@ class RegistroRepository {
     required String caminhoFotoTemporario,
     required double latitudeAtual,
     required double longitudeAtual,
+    String? observation, // NOVO PARÂMETRO
   }) async {
     // Obter endereço baseado na localização
     Map<String, String> dadosEndereco;
@@ -161,66 +160,73 @@ class RegistroRepository {
       bairro: dadosEndereco['bairro'],
       cidade: dadosEndereco['cidade'],
       base64Foto: fotoBase64,
+      observation: observation, // NOVO CAMPO
       status: StatusValidacao.pendente,
-      sincronizado: false, // Sempre false inicialmente
+      sincronizado: false,
     );
 
-    // Salvar no armazenamento local
-    await _localStorage.insertRegistro(novoRegistro);
-    print(
-      "Registro criado e salvo localmente: ID=${novoRegistro.id}, usuarioId=${novoRegistro.usuarioId}",
-    );
-
-    // Tentar sincronizar com o servidor, se estiver online
+    // Se estiver online, tenta enviar diretamente
     if (_connectivityService.isOnline) {
       try {
-        // Usar apenas _sincronizarRegistro, não chamar a API diretamente depois
-        final sincronizou = await _sincronizarRegistro(novoRegistro);
-        print(
-          "Tentativa de sincronização: ${sincronizou ? 'Sucesso' : 'Falha'}",
-        );
-      } catch (e) {
-        print('Erro ao sincronizar com a API (ignorado): $e');
-      }
-    }
+        // Tenta sincronizar imediatamente
+        await _sincronizarRegistro(novoRegistro);
 
-    return novoRegistro;
+        // Se chegou até aqui, foi sincronizado com sucesso
+        // Agora salva local com sincronizado = true
+        final registroSincronizado = novoRegistro.copyWith(sincronizado: true);
+        await _localStorage.insertRegistro(registroSincronizado);
+
+        print("Registro criado e sincronizado: ID=${novoRegistro.id}");
+        return registroSincronizado;
+      } catch (e) {
+        // Se for erro de validação do servidor (como buraco próximo),
+        // não salva localmente e propaga o erro
+        if (e is ApiException && (e.statusCode == 400 || e.statusCode == 409)) {
+          print("Erro de validação do servidor - não salvando localmente: $e");
+          rethrow; // Propaga o erro sem salvar localmente
+        }
+
+        // Se for erro de conexão ou outro erro de rede,
+        // salva localmente para sincronizar depois
+        print("Erro de conexão - salvando localmente: $e");
+        await _localStorage.insertRegistro(novoRegistro);
+        print(
+          "Registro salvo localmente para sincronização posterior: ID=${novoRegistro.id}",
+        );
+        return novoRegistro;
+      }
+    } else {
+      // Offline - salva localmente
+      await _localStorage.insertRegistro(novoRegistro);
+      print("Offline - registro salvo localmente: ID=${novoRegistro.id}");
+      return novoRegistro;
+    }
   }
 
   Future<List<Registro>> obterTodosRegistros() async {
     // Verificar se está online
     if (_connectivityService.isOnline) {
-      try {
-        // Tentar buscar dados do servidor
-        final registrosServidor = await _apiProvider.obterRegistros();
-        // Atualizar banco local com dados do servidor
-        for (var registro in registrosServidor) {
-          await _localStorage.insertRegistro(registro);
-        }
-        return await _localStorage.getRegistros();
-      } catch (e) {
-        print('Erro ao buscar registros do servidor: $e');
-        return await _localStorage.getRegistros();
+      // Tentar buscar dados do servidor
+      // A exceção será propagada se houver erro
+      final registrosServidor = await _apiProvider.obterRegistros();
+
+      // Atualizar banco local com dados do servidor
+      for (var registro in registrosServidor) {
+        await _localStorage.insertRegistro(registro);
       }
+      return await _localStorage.getRegistros();
     } else {
       return await _localStorage.getRegistros();
     }
   }
 
-  // Remover um registro
   Future<bool> removerRegistro(String registroId) async {
-    try {
-      await _localStorage.deleteRegistro(registroId);
-
-      // Se estiver online, notificar o servidor sobre a remoção
-      if (_connectivityService.isOnline) {
-        await _apiProvider.removerRegistro(registroId);
-      }
-
-      return true;
-    } catch (e) {
-      print('Erro ao remover registro: $e');
-      return false;
+    await _localStorage.deleteRegistro(registroId);
+    // Se estiver online, tenta remover do servidor primeiro
+    if (_connectivityService.isOnline) {
+      // A exceção será propagada se houver erro
+      await _apiProvider.removerRegistro(registroId);
     }
+    return true;
   }
 }

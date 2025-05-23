@@ -1,7 +1,10 @@
+import 'dart:async';
+import 'package:avisai4/bloc/registro/registro_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../bloc/auth/auth_bloc.dart';
+import '../../../bloc/connectivity/connectivity_bloc.dart';
 import '../registro/novo_registro_screen.dart';
 import '../registro/meus_registros_screen.dart';
 import '../mapa/mapa_irregularidades_screen.dart';
@@ -18,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late int _indiceAbaSelecionada;
   final List<Widget> _telas = [];
+  Timer? _autoSyncTimer; // Timer para sincronização automática
 
   @override
   void initState() {
@@ -25,6 +29,35 @@ class _HomeScreenState extends State<HomeScreen> {
     _indiceAbaSelecionada = widget.index;
 
     solicitarPermissaoCamera();
+
+    // Configura o timer para sincronizar a cada 30 segundos
+    _iniciarSincronizacaoAutomatica();
+  }
+
+  void _iniciarSincronizacaoAutomatica() {
+    // Cancela qualquer timer existente
+    _autoSyncTimer?.cancel();
+
+    // Cria um novo timer que executa a cada 30 segundos
+    _autoSyncTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+      // Verifica se o widget ainda está montado e se há conectividade
+      if (!mounted) return;
+
+      final connectivityState = context.read<ConnectivityBloc>().state;
+      if (connectivityState is ConnectivityConnected) {
+        // Usa o evento de sincronização silenciosa (sem mostrar feedback ao usuário)
+        context.read<RegistroBloc>().add(
+          SincronizarRegistrosPendentes(context: context, silencioso: true),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // Cancela o timer quando o widget é destruído
+    _autoSyncTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -257,6 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
           elevation: 0, // Sem sombra
           foregroundColor: Colors.white, // Ícones brancos
           toolbarHeight: 80, // <- aumenta a altura da AppBar
+          automaticallyImplyLeading: false,
         ),
         body: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {

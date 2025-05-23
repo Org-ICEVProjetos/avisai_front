@@ -1,6 +1,6 @@
-enum StatusValidacao { validado, naoValidado, pendente, emExecucao, resolvido }
+enum StatusValidacao { validado, naoValidado, pendente, emRota, resolvido }
 
-enum CategoriaIrregularidade { buraco, posteDefeituoso, lixoIrregular }
+enum CategoriaIrregularidade { buraco, posteDefeituoso, lixoIrregular, outro }
 
 class Registro {
   final String? id;
@@ -15,6 +15,7 @@ class Registro {
   final String? bairro;
   final String? cidade;
   final String base64Foto;
+  final String? observation; // NOVO CAMPO
   final StatusValidacao status;
   final bool sincronizado;
   final String? validadoPorUsuarioId;
@@ -33,6 +34,7 @@ class Registro {
     this.bairro,
     this.cidade,
     required this.base64Foto,
+    this.observation, // NOVO PARÂMETRO
     this.status = StatusValidacao.pendente,
     this.sincronizado = false,
     this.validadoPorUsuarioId,
@@ -52,6 +54,7 @@ class Registro {
     String? bairro,
     String? cidade,
     String? base64Foto,
+    String? observation, // NOVO
     StatusValidacao? status,
     bool? sincronizado,
     String? validadoPorUsuarioId,
@@ -70,6 +73,7 @@ class Registro {
       bairro: bairro ?? this.bairro,
       cidade: cidade ?? this.cidade,
       base64Foto: base64Foto ?? this.base64Foto,
+      observation: observation ?? this.observation, // NOVO
       status: status ?? this.status,
       sincronizado: sincronizado ?? this.sincronizado,
       validadoPorUsuarioId: validadoPorUsuarioId ?? this.validadoPorUsuarioId,
@@ -77,7 +81,6 @@ class Registro {
     );
   }
 
-  // Método original para o banco de dados local
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -92,17 +95,14 @@ class Registro {
       'bairro': bairro,
       'cidade': cidade,
       'base64Foto': base64Foto,
+      'observation': observation, // NOVO
       'status': _stringFromSatus(status),
-      'sincronizado':
-          sincronizado
-              ? 1
-              : 0, // Importante: SQLite não aceita booleanos, use 1/0
+      'sincronizado': sincronizado ? 1 : 0,
       'validadoPorUsuarioId': validadoPorUsuarioId,
       'dataValidacao': dataValidacao?.toIso8601String(),
     };
   }
 
-  // Método adicional para API
   Map<String, dynamic> toApiJson() {
     return {
       'id': id,
@@ -115,6 +115,7 @@ class Registro {
       'neighborhood': bairro,
       'city': cidade,
       'photoPath': base64Foto,
+      'observation': observation, // NOVO
       'status': _stringFromSatus(status),
       'synchronizedStatus': sincronizado ? 1 : 0,
       'validatedByUserId': validadoPorUsuarioId,
@@ -123,11 +124,9 @@ class Registro {
   }
 
   factory Registro.fromJson(Map<String, dynamic> json) {
-    // Identificar se é um JSON da API ou do banco local
     final bool isApiJson =
         json.containsKey('userId') || json.containsKey('category');
 
-    // Mapear campos de acordo com a origem
     final String? id = json['id'];
     final String? usuarioId = isApiJson ? json['userId'] : json['usuarioId'];
     final String usuarioNome =
@@ -146,9 +145,7 @@ class Registro {
         isApiJson ? (json['city'] ?? '') : (json['cidade'] ?? '');
     final String base64Foto =
         isApiJson ? (json['photoPath'] ?? '') : (json['base64Foto'] ?? '');
-
-    // Log para debug
-    print("Mapeando Registro de JSON - ID: $id, usuarioId: $usuarioId");
+    final String? observation = json['observation']; // NOVO
 
     return Registro(
       id: id,
@@ -163,6 +160,7 @@ class Registro {
       bairro: _normalizarTexto(bairro),
       cidade: _normalizarTexto(cidade),
       base64Foto: base64Foto,
+      observation: _normalizarTexto(observation), // NOVO
       status: _statusFromString(json['status'] ?? 'PENDENTE_VALIDACAO'),
       sincronizado: isApiJson ? true : (json['sincronizado'] == 1),
       validadoPorUsuarioId:
@@ -211,8 +209,9 @@ class Registro {
         return CategoriaIrregularidade.posteDefeituoso;
       case 'LIXO_DESCARTADO':
         return CategoriaIrregularidade.lixoIrregular;
+      case 'OUTRO':
       default:
-        return CategoriaIrregularidade.lixoIrregular;
+        return CategoriaIrregularidade.outro;
     }
   }
 
@@ -224,6 +223,9 @@ class Registro {
         return 'POSTE_DEFEITO';
       case CategoriaIrregularidade.lixoIrregular:
         return 'LIXO_DESCARTADO';
+
+      case CategoriaIrregularidade.outro:
+        return 'OUTRO';
     }
   }
 
@@ -235,17 +237,16 @@ class Registro {
       case 'StatusValidacao.naoValidado':
       case 'NAO_VALIDADO':
         return StatusValidacao.naoValidado;
-      case 'PENDENTE_VALIDACAO':
+      case 'PENDENTE':
       case 'StatusValidacao.pendente':
         return StatusValidacao.pendente;
-      case 'StatusValidacao.emExecucao':
-      case 'EM_EXECUCAO':
-        return StatusValidacao.emExecucao;
+      case 'StatusValidacao.emRota':
+      case 'EM_ROTA':
+        return StatusValidacao.emRota;
       case 'StatusValidacao.resolvido':
       case 'RESOLVIDO':
         return StatusValidacao.resolvido;
       default:
-        print('Status desconhecido: $status, usando pendente como padrão');
         return StatusValidacao.pendente;
     }
   }
@@ -253,13 +254,13 @@ class Registro {
   static String _stringFromSatus(StatusValidacao status) {
     switch (status) {
       case StatusValidacao.pendente:
-        return "PENDENTE_VALIDACAO";
+        return "PENDENTE";
       case StatusValidacao.validado:
         return "VALIDADO";
       case StatusValidacao.naoValidado:
         return "NAO_VALIDADO";
-      case StatusValidacao.emExecucao:
-        return "EM_EXECUCAO";
+      case StatusValidacao.emRota:
+        return "EM_ROTA";
       case StatusValidacao.resolvido:
         return "RESOLVIDO";
     }

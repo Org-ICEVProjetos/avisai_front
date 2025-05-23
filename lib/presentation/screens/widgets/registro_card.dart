@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:avisai4/data/models/registro.dart';
 import 'package:flutter/material.dart';

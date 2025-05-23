@@ -1,5 +1,5 @@
 import 'package:avisai4/presentation/screens/home/onboarding_screen.dart';
-import 'package:avisai4/presentation/screens/widgets/tutorial_manager.dart';
+import 'package:avisai4/services/tutorial_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_multi_formatter/formatters/masked_input_formatter.dart';
@@ -168,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.mensagem),
-                duration: Duration(seconds: 1),
+                duration: Duration(seconds: 3),
                 backgroundColor: theme.colorScheme.error,
               ),
             );

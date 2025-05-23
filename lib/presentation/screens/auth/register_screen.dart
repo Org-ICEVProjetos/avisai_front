@@ -1,5 +1,6 @@
 import 'package:avisai4/presentation/screens/home/onboarding_screen.dart';
-import 'package:avisai4/presentation/screens/widgets/tutorial_manager.dart';
+import 'package:avisai4/services/tutorial_manager.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -285,7 +286,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.mensagem),
-                duration: Duration(seconds: 1),
+                duration: Duration(seconds: 3),
                 backgroundColor: theme.colorScheme.error,
               ),
             );
@@ -442,60 +443,13 @@ class _RegisterScreenState extends State<RegisterScreen>
                             // Checkbox de concordância com termos com animação
                             FadeTransition(
                               opacity: _fadeInTermsAnimation,
-                              child: Row(
-                                children: [
-                                  Checkbox(
-                                    value: _concordaTermos,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _concordaTermos = value ?? false;
-                                      });
-                                    },
-                                    activeColor: theme.primaryColor,
-                                  ),
-                                  Expanded(
-                                    child: RichText(
-                                      text: TextSpan(
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              color: Colors.grey[500],
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                        children: [
-                                          const TextSpan(
-                                            text: 'Li e concordo com os ',
-                                          ),
-                                          TextSpan(
-                                            text: 'Termos',
-                                            style: TextStyle(
-                                              color:
-                                                  Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                              fontWeight: FontWeight.bold,
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          const TextSpan(text: ' e '),
-                                          TextSpan(
-                                            text: 'Política de Privacidade',
-                                            style: TextStyle(
-                                              color:
-                                                  Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                              fontWeight: FontWeight.bold,
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          const TextSpan(text: '.'),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              child: TermsAndPolicyWidget(
+                                concordaTermos: _concordaTermos,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _concordaTermos = value ?? false;
+                                  });
+                                },
                               ),
                             ),
 
@@ -670,6 +624,116 @@ class _RegisterScreenState extends State<RegisterScreen>
       context,
       const OnboardingScreen(),
       const HomeScreen(index: 1),
+    );
+  }
+}
+
+class TermsAndPolicyWidget extends StatelessWidget {
+  final bool concordaTermos;
+  final Function(bool?) onChanged;
+
+  const TermsAndPolicyWidget({
+    Key? key,
+    required this.concordaTermos,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Checkbox(
+          value: concordaTermos,
+          onChanged: onChanged,
+          activeColor: theme.primaryColor,
+        ),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.grey[500],
+                fontWeight: FontWeight.bold,
+              ),
+              children: [
+                const TextSpan(text: 'Li e concordo com os '),
+                TextSpan(
+                  text: 'Termos',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer:
+                      TapGestureRecognizer()
+                        ..onTap = () {
+                          _mostrarDialogoTermos(context, true);
+                        },
+                ),
+                const TextSpan(text: ' e '),
+                TextSpan(
+                  text: 'Política de Privacidade',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer:
+                      TapGestureRecognizer()
+                        ..onTap = () {
+                          _mostrarDialogoTermos(context, false);
+                        },
+                ),
+                const TextSpan(text: '.'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _mostrarDialogoTermos(BuildContext context, bool isTermos) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(isTermos ? 'Termos de Uso' : 'Política de Privacidade'),
+          content: SingleChildScrollView(
+            child: Text(
+              isTermos
+                  ? 'Aqui iriam os termos de uso...' // Substitua pelo texto real dos termos
+                  : 'Política de Privacidade\n\n'
+                      'Este aplicativo coleta e armazena dados pessoais fornecidos voluntariamente pelo usuário, '
+                      'incluindo nome, CPF, e-mail e senha. Esses dados são usados para autenticação, '
+                      'identificação e controle de acesso aos recursos do app.\n\n'
+                      'Além disso, os registros criados pelos usuários dentro da aplicação podem ser acessados '
+                      'por administradores autorizados com o objetivo de garantir o funcionamento adequado do '
+                      'sistema e prestar suporte.\n\n'
+                      'Todas as informações são armazenadas em banco de dados seguro. Apenas administradores '
+                      'autorizados têm acesso a essas informações para fins operacionais, e nenhum dado é '
+                      'compartilhado com terceiros sem o consentimento do usuário, salvo em casos previstos por lei.\n\n'
+                      'O usuário pode entrar em contato conosco a qualquer momento para esclarecimentos, '
+                      'solicitações de exclusão de conta ou informações sobre os dados armazenados.\n\n'
+                      'E-mail de contato: avisaithepi@gmail.com',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.black,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Fechar'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -49,9 +49,6 @@ class AuthRepository {
 
       return usuario;
     } catch (e) {
-      // Verificar se há um usuário local com essas credenciais
-      // Nota: Isso deve ser removido em produção, pois o login offline sem token
-      // não é compatível com o novo esquema de autenticação
       rethrow;
     }
   }

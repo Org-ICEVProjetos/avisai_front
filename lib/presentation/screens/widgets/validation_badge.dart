@@ -29,9 +29,9 @@ class ValidationBadge extends StatelessWidget {
         texto = 'Pendente';
         cor = Colors.amber;
         break;
-      case StatusValidacao.emExecucao:
+      case StatusValidacao.emRota:
         icon = Icons.engineering;
-        texto = 'Em execução';
+        texto = 'Em rota';
         cor = Theme.of(context).colorScheme.primary;
         break;
       case StatusValidacao.resolvido:

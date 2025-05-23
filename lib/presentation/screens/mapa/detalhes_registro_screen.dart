@@ -1,14 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:avisai4/bloc/connectivity/connectivity_bloc.dart';
 import 'package:avisai4/data/models/registro.dart';
 import 'package:avisai4/presentation/screens/widgets/custom_button.dart';
-
 import 'package:avisai4/presentation/screens/widgets/validation_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../bloc/registro/registro_bloc.dart';
@@ -26,6 +22,8 @@ class DetalheRegistroScreen extends StatelessWidget {
         return 'Poste com defeito';
       case CategoriaIrregularidade.lixoIrregular:
         return 'Descarte irregular de lixo';
+      case CategoriaIrregularidade.outro:
+        return "Outro";
     }
   }
 
@@ -43,8 +41,8 @@ class DetalheRegistroScreen extends StatelessWidget {
         return 'Pendente de validação';
       case StatusValidacao.resolvido:
         return "Resolvido";
-      case StatusValidacao.emExecucao:
-        return "Em execução";
+      case StatusValidacao.emRota:
+        return "Em rota";
     }
   }
 
@@ -58,7 +56,7 @@ class DetalheRegistroScreen extends StatelessWidget {
         return Colors.blue;
       case StatusValidacao.resolvido:
         return Colors.greenAccent;
-      case StatusValidacao.emExecucao:
+      case StatusValidacao.emRota:
         return Colors.deepOrange;
     }
   }
@@ -81,134 +79,6 @@ class DetalheRegistroScreen extends StatelessWidget {
         ),
       );
     }
-  }
-
-  Future<void> _compartilharRegistro(BuildContext context) async {
-    // Em uma implementação real, você usaria o pacote share_plus para compartilhar
-    // a imagem e informações do registro
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Funcionalidade de compartilhamento será implementada em breve.',
-        ),
-
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
-
-  void _confirmarRemocao(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // Get screen size
-        final Size screenSize = MediaQuery.of(context).size;
-        final double screenWidth = screenSize.width;
-        final double screenHeight = screenSize.height;
-
-        // Calculate responsive sizes
-        final double titleFontSize = screenWidth * 0.05; // 5% of screen width
-        final double bodyFontSize = screenWidth * 0.04; // 4% of screen width
-        final double buttonHeight = screenHeight * 0.06; // 6% of screen height
-
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              screenWidth * 0.04,
-            ), // Responsive border radius
-          ),
-          contentPadding: EdgeInsets.fromLTRB(
-            screenWidth * 0.06, // Left padding
-            screenHeight * 0.03, // Top padding
-            screenWidth * 0.06, // Right padding
-            screenHeight * 0.02, // Bottom padding
-          ),
-          title: Text(
-            'Remover registro',
-            style: TextStyle(
-              fontSize: titleFontSize,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-              fontFamily: 'Inter',
-            ),
-            textAlign: TextAlign.center,
-          ),
-          content: Text(
-            'Tem certeza que deseja remover este registro? Esta ação não pode ser desfeita.',
-            style: TextStyle(
-              fontSize: bodyFontSize,
-              color: Colors.black87,
-              fontFamily: 'Inter',
-              height: 1.5,
-            ),
-            textAlign: TextAlign.justify,
-          ),
-          actionsPadding: EdgeInsets.fromLTRB(
-            screenWidth * 0.06, // Left padding
-            0, // Top padding
-            screenWidth * 0.06, // Right padding
-            screenHeight * 0.03, // Bottom padding
-          ),
-          actions: [
-            // Layout de coluna para os botões ocuparem toda a largura
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Botão principal "Remover"
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    context.read<RegistroBloc>().add(
-                      RemoverRegistro(registroId: registro.id!),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.08),
-                    ),
-                    minimumSize: Size(double.infinity, buttonHeight),
-                  ),
-                  child: Text(
-                    'Remover',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Inter',
-                      fontSize: bodyFontSize,
-                    ),
-                  ),
-                ),
-
-                SizedBox(
-                  height: screenHeight * 0.01,
-                ), // Espaçamento entre botões
-                // Botão secundário "Cancelar"
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
-                    minimumSize: Size(
-                      double.infinity,
-                      buttonHeight *
-                          0.8, // Ligeiramente menor que o botão principal
-                    ),
-                  ),
-                  child: Text(
-                    'Cancelar',
-                    style: TextStyle(
-                      fontSize: bodyFontSize,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
   }
 
   // No buildImage:
@@ -558,107 +428,132 @@ class DetalheRegistroScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-
-                    // Usuário
-                    Row(
-                      children: [
-                        Icon(Icons.person, color: Colors.grey[700], size: 22),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Registrado por: ${registro.usuarioNome}',
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ],
-                    ),
-
-                    // Informações de validação
-                    if (registro.status == StatusValidacao.validado &&
-                        registro.validadoPorUsuarioId != null) ...[
-                      const SizedBox(height: 24),
-                      const Divider(),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Informações de validação',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                    if (registro.observation != null &&
+                        registro.observation!.isNotEmpty) ...[
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.verified_user,
-                            color: Colors.green,
-                            size: 22,
-                          ),
+                          Icon(Icons.notes, color: Colors.grey[700], size: 22),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              'Validado por: ID ${registro.validadoPorUsuarioId}',
-                              style: const TextStyle(fontSize: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Observação:',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey[300]!,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    registro.observation!,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      if (registro.dataValidacao != null)
+                      const SizedBox(height: 16),
+
+                      // Usuário
+                      Row(
+                        children: [
+                          Icon(Icons.person, color: Colors.grey[700], size: 22),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Registrado por: ${registro.usuarioNome}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+
+                      // Informações de validação
+                      if (registro.status == StatusValidacao.validado &&
+                          registro.validadoPorUsuarioId != null) ...[
+                        const SizedBox(height: 24),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Informações de validação',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
-                            Icon(
-                              Icons.calendar_today,
-                              color: Colors.grey[700],
+                            const Icon(
+                              Icons.verified_user,
+                              color: Colors.green,
                               size: 22,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Data de validação: ${_formatarData(registro.dataValidacao!)}',
-                              style: const TextStyle(fontSize: 16),
+                            Expanded(
+                              child: Text(
+                                'Validado por: ID ${registro.validadoPorUsuarioId}',
+                                style: const TextStyle(fontSize: 16),
+                              ),
                             ),
                           ],
                         ),
-                      const SizedBox(height: 8),
-                      const Divider(),
-                    ],
-
-                    // Botões de ação
-                    const SizedBox(height: 32),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomButton(
-                            texto: 'Ver no Mapa',
-                            icone: Icons.map,
-                            onPressed:
-                                () => _abrirMapa(
-                                  context,
-                                  registro.latitude,
-                                  registro.longitude,
-                                ),
+                        const SizedBox(height: 8),
+                        if (registro.dataValidacao != null)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                color: Colors.grey[700],
+                                size: 22,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Data de validação: ${_formatarData(registro.dataValidacao!)}',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: CustomButton(
-                            texto: 'Compartilhar',
-                            icone: Icons.share,
-                            cor: Theme.of(context).colorScheme.primary,
-                            onPressed: () => _compartilharRegistro(context),
-                          ),
-                        ),
+                        const SizedBox(height: 8),
+                        const Divider(),
                       ],
-                    ),
-                    const SizedBox(height: 16),
 
-                    // Botão de remover
-                    CustomButton(
-                      texto: 'Remover Registro',
-                      icone: Icons.delete_forever,
-                      cor: Colors.red,
-                      onPressed: () => _confirmarRemocao(context),
-                    ),
-
-                    const SizedBox(height: 24),
+                      // Botões de ação
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomButton(
+                              texto: 'Ver no Mapa',
+                              icone: Icons.map,
+                              onPressed:
+                                  () => _abrirMapa(
+                                    context,
+                                    registro.latitude,
+                                    registro.longitude,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                   ],
                 ),
               ),

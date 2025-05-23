@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart';
@@ -6,7 +5,6 @@ import 'package:geocoding/geocoding.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../config/api_config.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -15,17 +13,7 @@ class LocationService {
 
   // Obtém a localização atual do usuário
   Future<Position> getCurrentLocation() async {
-    bool serviceEnabled;
     LocationPermission permission;
-
-    // Verifica se os serviços de localização estão habilitados
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw PlatformException(
-        code: 'LOCATION_SERVICES_DISABLED',
-        message: 'Os serviços de localização estão desabilitados.',
-      );
-    }
 
     // Verifica permissões
     permission = await Geolocator.checkPermission();
@@ -49,34 +37,11 @@ class LocationService {
 
     // Obtém a localização atual
     return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
+      locationSettings: AndroidSettings(
+        accuracy: LocationAccuracy.best,
+        forceLocationManager: true,
+      ),
     );
-  }
-
-  // Calcula a distância entre duas coordenadas
-  double calculateDistance(
-    double startLatitude,
-    double startLongitude,
-    double endLatitude,
-    double endLongitude,
-  ) {
-    // Fórmula de Haversine para calcular distância entre coordenadas
-    var earthRadius = 6371000; // metros
-    var dLat = _degreesToRadians(endLatitude - startLatitude);
-    var dLon = _degreesToRadians(endLongitude - startLongitude);
-    var a =
-        math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_degreesToRadians(startLatitude)) *
-            math.cos(_degreesToRadians(endLatitude)) *
-            math.sin(dLon / 2) *
-            math.sin(dLon / 2);
-    var c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    var distance = earthRadius * c;
-    return distance;
-  }
-
-  double _degreesToRadians(double degrees) {
-    return degrees * math.pi / 180;
   }
 
   // Obtém dados do endereço a partir da localização
@@ -193,50 +158,4 @@ class LocationService {
   }
 
   // Função para analisar uma coordenada GPS de uma string
-  double _parseGpsCoordinate(String coord) {
-    // Use regex para extrair números do formato "X deg Y' Z" S/N/E/W"
-    // ou qualquer outro formato que o EXIF forneça
-
-    try {
-      // Tentativa 1: Formato com graus, minutos, segundos
-      RegExp degMinSecRegex = RegExp(r"(\d+)\s*deg\s*(\d+)\'\s*(\d+\.?\d*)");
-      var match = degMinSecRegex.firstMatch(coord);
-
-      if (match != null) {
-        double degrees = double.parse(match.group(1)!);
-        double minutes = double.parse(match.group(2)!);
-        double seconds = double.parse(match.group(3)!);
-
-        return degrees + (minutes / 60.0) + (seconds / 3600.0);
-      }
-
-      // Tentativa 2: Formato decimal simples
-      RegExp decimalRegex = RegExp(r'(\d+\.?\d*)');
-      match = decimalRegex.firstMatch(coord);
-
-      if (match != null) {
-        return double.parse(match.group(1)!);
-      }
-
-      // Formato não reconhecido
-      print('Formato de coordenada não reconhecido: $coord');
-      return 0.0;
-    } catch (e) {
-      print('Erro ao analisar coordenada: $e');
-      return 0.0;
-    }
-  }
-}
-
-// Classe auxiliar para lidar com frações racionais do exif
-class Ratio {
-  final int numerator;
-  final int denominator;
-
-  Ratio(this.numerator, this.denominator);
-
-  double toDouble() {
-    if (denominator == 0) return 0.0;
-    return numerator / denominator;
-  }
 }

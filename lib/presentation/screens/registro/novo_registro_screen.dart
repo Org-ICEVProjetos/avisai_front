@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:avisai4/presentation/screens/home/home_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
+// import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../bloc/connectivity/connectivity_bloc.dart';
@@ -40,6 +41,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
   Position? _localizacaoCaptura;
   // Adicione esta variável ao estado da sua classe
   bool _flashAtivado = false;
+  final TextEditingController _observationController = TextEditingController();
 
   // Controlador de animação
   late AnimationController _buttonAnimationController;
@@ -72,11 +74,10 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
 
   @override
   void dispose() {
-    // Liberar recursos da animação
     _buttonAnimationController.dispose();
+    _observationController.dispose(); // NOVO
 
     try {
-      // Garantir que os recursos da câmera são liberados
       if (_cameraController != null) {
         _cameraController!.dispose();
         _cameraController = null;
@@ -145,9 +146,13 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
 
     try {
       // Verificar permissões
-      print('Verificando permissões da câmera...');
+      if (kDebugMode) {
+        print('Verificando permissões da câmera...');
+      }
       final statusCamera = await Permission.camera.status;
-      print('Status da permissão de câmera: $statusCamera');
+      if (kDebugMode) {
+        print('Status da permissão de câmera: $statusCamera');
+      }
 
       if (statusCamera.isDenied) {
         await Permission.camera.request();
@@ -161,9 +166,13 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       }
 
       // Tentar obter as câmeras disponíveis
-      print('Buscando câmeras disponíveis...');
+      if (kDebugMode) {
+        print('Buscando câmeras disponíveis...');
+      }
       _cameras = await availableCameras();
-      print('Câmeras encontradas: ${_cameras?.length ?? 0}');
+      if (kDebugMode) {
+        print('Câmeras encontradas: ${_cameras?.length ?? 0}');
+      }
 
       if (_cameras == null || _cameras!.isEmpty) {
         setState(() {
@@ -175,7 +184,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       }
 
       // Inicializar o controlador com a primeira câmera disponível
-      print('Inicializando controlador de câmera...');
+      if (kDebugMode) {
+        print('Inicializando controlador de câmera...');
+      }
       _cameraController = CameraController(
         _cameras![0],
         ResolutionPreset.veryHigh,
@@ -184,9 +195,13 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       );
 
       // Aguardar a inicialização do controlador
-      print('Aguardando inicialização do controlador...');
+      if (kDebugMode) {
+        print('Aguardando inicialização do controlador...');
+      }
       await _cameraController!.initialize();
-      print('Controlador de câmera inicializado com sucesso!');
+      if (kDebugMode) {
+        print('Controlador de câmera inicializado com sucesso!');
+      }
 
       if (!mounted) return;
 
@@ -194,7 +209,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         _inicializando = false;
       });
     } catch (e) {
-      print('ERRO AO INICIALIZAR CÂMERA: $e');
+      if (kDebugMode) {
+        print('ERRO AO INICIALIZAR CÂMERA: $e');
+      }
 
       if (mounted) {
         setState(() {
@@ -224,7 +241,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         _flashAtivado = !_flashAtivado;
       });
     } catch (e) {
-      print('Erro ao alternar flash: $e');
+      if (kDebugMode) {
+        print('Erro ao alternar flash: $e');
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -235,6 +254,22 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         ),
       );
     }
+  }
+
+  Future<Position> obterLocalizacaoComBaseNaConexao(
+    BuildContext context,
+  ) async {
+    final isOnline =
+        context.read<ConnectivityBloc>().state is ConnectivityConnected;
+
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings: AndroidSettings(
+        accuracy: LocationAccuracy.best,
+        forceLocationManager: !isOnline,
+      ),
+    );
+
+    return position;
   }
 
   Future<void> _capturarFoto() async {
@@ -259,12 +294,11 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       final arquivo = await _cameraController!.takePicture();
 
       // Capturar a localização atual
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: AndroidSettings(
-          accuracy: LocationAccuracy.best,
-          forceLocationManager: true,
-        ),
-      );
+      final position = await obterLocalizacaoComBaseNaConexao(context);
+
+      if (kDebugMode) {
+        print("AQUII: ${position.latitude}, ${position.longitude}");
+      }
 
       setState(() {
         _imagemCapturada = File(arquivo.path);
@@ -273,7 +307,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         _inicializando = false;
       });
     } catch (e) {
-      print('Erro ao capturar imagem ou localização: $e');
+      if (kDebugMode) {
+        print('Erro ao capturar imagem ou localização: $e');
+      }
       setState(() {
         _inicializando = false;
       });
@@ -288,48 +324,48 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
     }
   }
 
-  Future<void> _selecionarDaGaleria() async {
-    try {
-      final picker = ImagePicker();
-      final arquivo = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 70, // Reduzir qualidade para economizar memória
-      );
+  // Future<void> _selecionarDaGaleria() async {
+  //   try {
+  //     final picker = ImagePicker();
+  //     final arquivo = await picker.pickImage(
+  //       source: ImageSource.gallery,
+  //       imageQuality: 70, // Reduzir qualidade para economizar memória
+  //     );
 
-      if (arquivo == null) return;
+  //     if (arquivo == null) return;
 
-      setState(() {
-        _inicializando = true;
-      });
+  //     setState(() {
+  //       _inicializando = true;
+  //     });
 
-      // Capturar a localização atual
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: AndroidSettings(
-          accuracy: LocationAccuracy.best,
-          forceLocationManager: true,
-        ),
-      );
+  //     // Capturar a localização atual
+  //     final position = await Geolocator.getCurrentPosition(
+  //       locationSettings: AndroidSettings(
+  //         accuracy: LocationAccuracy.best,
+  //         forceLocationManager: true,
+  //       ),
+  //     );
 
-      setState(() {
-        _imagemCapturada = File(arquivo.path);
-        _tirouFoto = true;
-        _localizacaoCaptura = position;
-        _inicializando = false;
-      });
-    } catch (e) {
-      setState(() {
-        _inicializando = false;
-      });
-      print('Erro ao selecionar da galeria: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao selecionar imagem: $e'),
-          duration: Duration(seconds: 1),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
+  //     setState(() {
+  //       _imagemCapturada = File(arquivo.path);
+  //       _tirouFoto = true;
+  //       _localizacaoCaptura = position;
+  //       _inicializando = false;
+  //     });
+  //   } catch (e) {
+  //     setState(() {
+  //       _inicializando = false;
+  //     });
+  //     print('Erro ao selecionar da galeria: $e');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Erro ao selecionar imagem: $e'),
+  //         duration: Duration(seconds: 1),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //   }
+  // }
 
   void _cancelar() {
     setState(() {
@@ -384,6 +420,10 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
           caminhoFotoTemporario: caminhoImagem,
           latitude: _localizacaoCaptura!.latitude,
           longitude: _localizacaoCaptura!.longitude,
+          observation:
+              _observationController.text.trim().isEmpty
+                  ? null
+                  : _observationController.text.trim(),
         ),
       );
 
@@ -393,7 +433,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
 
       // Navegue para a tela principal e libere recursos explicitamente
     } catch (e) {
-      print("Erro durante o envio do registro: $e");
+      if (kDebugMode) {
+        print("Erro durante o envio do registro: $e");
+      }
       if (mounted) {
         setState(() {
           _inicializando = false;
@@ -419,18 +461,19 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.mensagem),
+              duration: Duration(seconds: 3),
               backgroundColor: Colors.green,
             ),
           );
         } else if (state is RegistroErro) {
-          // Mostra erro mas não fecha a tela
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Erro na API, mas registro salvo localmente"),
-              duration: Duration(seconds: 1),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          // // Mostra erro mas não fecha a tela
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   const SnackBar(
+          //     content: Text("Erro na API, mas registro salvo localmente"),
+          //     duration: Duration(seconds: 1),
+          //     backgroundColor: Colors.orange,
+          //   ),
+          // );
         }
       },
       child: Scaffold(
@@ -630,7 +673,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         ],
       );
     } catch (e) {
-      print('Erro ao exibir preview da câmera: $e');
+      if (kDebugMode) {
+        print('Erro ao exibir preview da câmera: $e');
+      }
       return Center(
         child: Text(
           'Erro ao exibir câmera: $e',
@@ -807,6 +852,16 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
                                 ),
                               ),
                             ),
+                            DropdownMenuItem(
+                              value: CategoriaIrregularidade.outro,
+                              child: Text(
+                                'Outros',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ),
                           ],
                           onChanged: (valor) {
                             if (valor != null) {
@@ -815,6 +870,37 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
                               });
                             }
                           },
+                        ),
+                      ),
+
+                      // NOVO: Campo de observação
+                      const SizedBox(height: 16),
+                      Material(
+                        elevation: 5,
+                        borderRadius: BorderRadius.circular(30),
+                        shadowColor: Colors.black.withOpacity(0.4),
+                        color: Colors.white,
+                        child: TextFormField(
+                          controller: _observationController,
+                          maxLines: 3,
+                          maxLength: 200,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[700],
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Observações (opcional)',
+                            hintStyle: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[500],
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                            counterText: '',
+                          ),
                         ),
                       ),
                     ],

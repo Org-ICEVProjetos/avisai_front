@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:avisai4/data/providers/api_provider.dart';
 import 'package:avisai4/services/user_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -191,7 +193,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final usuario = await _authRepository.login(event.cpf, event.senha);
       emit(Autenticado(usuario));
     } catch (e) {
-      emit(AuthErro(e.toString()));
+      // Personalizar mensagem baseada no tipo de erro
+      String mensagem = 'Erro ao fazer login: $e';
+      if (e is ApiException) {
+        mensagem = e.message; // Usa a mensagem específica do servidor
+      }
+      emit(AuthErro(mensagem));
     }
   }
 
@@ -209,7 +216,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(Autenticado(usuario));
     } catch (e) {
-      emit(AuthErro(e.toString()));
+      // Personalizar mensagem baseada no tipo de erro
+      String mensagem = 'Erro ao registrar usuário: $e';
+      if (e is ApiException) {
+        mensagem = e.message; // Usa a mensagem específica do servidor
+      }
+      emit(AuthErro(mensagem));
     }
   }
 
@@ -222,7 +234,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authRepository.recuperarSenha(event.cpf, event.email);
       emit(RecuperacaoSenhaEnviada());
     } catch (e) {
-      emit(AuthErro(e.toString()));
+      // Personalizar mensagem baseada no tipo de erro
+      String mensagem = 'Erro ao recuperar senha: $e';
+      if (e is ApiException) {
+        mensagem = e.message; // Usa a mensagem específica do servidor
+      }
+      emit(AuthErro(mensagem));
     }
   }
 
@@ -239,7 +256,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthErro('Código inválido ou expirado'));
       }
     } catch (e) {
-      emit(AuthErro(e.toString()));
+      // Personalizar mensagem baseada no tipo de erro
+      String mensagem = 'Erro ao validar código: $e';
+      if (e is ApiException) {
+        mensagem = e.message; // Usa a mensagem específica do servidor
+      }
+      emit(AuthErro(mensagem));
     }
   }
 
@@ -259,7 +281,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthErro('Não foi possível alterar a senha'));
       }
     } catch (e) {
-      emit(AuthErro(e.toString()));
+      // Personalizar mensagem baseada no tipo de erro
+      String mensagem = 'Erro ao alterar senha: $e';
+      if (e is ApiException) {
+        mensagem = e.message; // Usa a mensagem específica do servidor
+      }
+      emit(AuthErro(mensagem));
     }
   }
 
@@ -273,7 +300,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await UserLocalStorage.removerUsuario();
       emit(NaoAutenticado());
     } catch (e) {
-      emit(AuthErro(e.toString()));
+      // Para logout, mesmo com erro, limpa os dados locais
+      await UserLocalStorage.removerUsuario();
+      emit(NaoAutenticado());
+
+      // Log do erro mas não mostra para o usuário
+      if (kDebugMode) {
+        print('Erro durante logout: $e');
+      }
     }
   }
 

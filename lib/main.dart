@@ -76,6 +76,7 @@ class MyApp extends StatelessWidget {
           BlocProvider<RegistroBloc>(
             create:
                 (context) => RegistroBloc(
+                  localStorageService,
                   registroRepository: registroRepository,
                   locationService: locationService,
                   connectivityService: connectivityService,

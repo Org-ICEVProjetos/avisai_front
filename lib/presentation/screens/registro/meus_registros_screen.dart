@@ -37,6 +37,8 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
         return 'Poste com defeito';
       case CategoriaIrregularidade.lixoIrregular:
         return 'Descarte irregular de lixo';
+      case CategoriaIrregularidade.outro:
+        return 'Outro';
     }
   }
 
@@ -352,7 +354,7 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.mensagem),
-              duration: Duration(seconds: 1),
+              duration: Duration(seconds: 3),
               backgroundColor: Colors.red,
             ),
           );
@@ -637,7 +639,13 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
 
       return RefreshIndicator(
         onRefresh: () async {
+          // Primeiro recarrega os registros para atualização imediata
           context.read<RegistroBloc>().add(CarregarRegistros());
+
+          // Depois tenta a sincronização em segundo plano
+          context.read<RegistroBloc>().add(
+            SincronizarRegistrosPendentes(context: context),
+          );
         },
         child: ListView.builder(
           padding: const EdgeInsets.only(top: 8, bottom: 16),
@@ -788,9 +796,7 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
     } else if (state is RegistroOperacaoSucesso) {
       return const Center(child: CircularProgressIndicator());
     } else {
-      return const Center(
-        child: Text('Erro ao carregar registros. Tente novamente.'),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
   }
 }

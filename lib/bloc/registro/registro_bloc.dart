@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:avisai4/data/providers/api_provider.dart';
+import 'package:avisai4/services/local_storage_service.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../data/models/registro.dart';
@@ -59,6 +63,7 @@ class CriarNovoRegistroComLocalizacao extends RegistroEvent {
   final String caminhoFotoTemporario;
   final double latitude;
   final double longitude;
+  final String? observation; // NOVO CAMPO
 
   CriarNovoRegistroComLocalizacao({
     required this.usuarioId,
@@ -67,6 +72,7 @@ class CriarNovoRegistroComLocalizacao extends RegistroEvent {
     required this.caminhoFotoTemporario,
     required this.latitude,
     required this.longitude,
+    this.observation, // NOVO PARÂMETRO
   });
 
   @override
@@ -76,10 +82,28 @@ class CriarNovoRegistroComLocalizacao extends RegistroEvent {
     caminhoFotoTemporario,
     latitude,
     longitude,
+    observation ?? '', // Incluir na comparação
   ];
 }
 
-class SincronizarRegistrosPendentes extends RegistroEvent {}
+// Atualize o evento SincronizarRegistrosPendentes para adicionar opção silenciosa
+class SincronizarRegistrosPendentes extends RegistroEvent {
+  // Adicionando BuildContext para acessar ScaffoldMessenger
+  final BuildContext context;
+  // Adicionando opção para sincronização silenciosa (sem feedback)
+  final bool silencioso;
+
+  SincronizarRegistrosPendentes({
+    required this.context,
+    this.silencioso = false,
+  });
+
+  @override
+  List<Object> get props => [context, silencioso];
+}
+
+// Classe de evento interno para sincronização silenciosa
+class _SincronizarRegistrosSilenciosamente extends RegistroEvent {}
 
 class RemoverRegistro extends RegistroEvent {
   final String registroId;
@@ -138,8 +162,10 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   final RegistroRepository _registroRepository;
   final ConnectivityService _connectivityService;
   StreamSubscription? _conectividadeSubscription;
+  final LocalStorageService _localStorage;
 
-  RegistroBloc({
+  RegistroBloc(
+    this._localStorage, {
     required RegistroRepository registroRepository,
     required LocationService locationService,
     required ConnectivityService connectivityService,
@@ -147,7 +173,8 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
        _connectivityService = connectivityService,
        super(RegistroCarregando()) {
     on<CarregarRegistros>(_onCarregarRegistros);
-    // on<SincronizarRegistrosPendentes>(_onSincronizarRegistrosPendentes);
+    on<SincronizarRegistrosPendentes>(_onSincronizarRegistrosPendentes);
+    on<_SincronizarRegistrosSilenciosamente>(_onSincronizarSilenciosamente);
     on<RemoverRegistro>(_onRemoverRegistro);
     on<ConexaoAlterada>(_onConexaoAlterada);
     on<CriarNovoRegistroComLocalizacao>(_onCriarNovoRegistroComLocalizacao);
@@ -172,46 +199,186 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         ),
       );
     } catch (e) {
-      emit(RegistroErro(mensagem: 'Erro ao carregar registros: $e'));
+      if (kDebugMode) {
+        print('Erro ao carregar registros: $e');
+      }
+
+      // Personalizar mensagem baseada no tipo de erro
+      String mensagem = 'Erro ao carregar registros: $e';
+      if (e is ApiException) {
+        mensagem = e.message; // Usa a mensagem específica do servidor
+      }
+
+      emit(RegistroErro(mensagem: mensagem));
+
+      // Tenta carregar os registros locais em caso de erro
+      try {
+        final registrosLocais = await _localStorage.getRegistros();
+        emit(
+          RegistroCarregado(
+            registros: registrosLocais,
+            estaOnline: _connectivityService.isOnline,
+          ),
+        );
+      } catch (_) {}
     }
   }
 
-  // Future<void> _onSincronizarRegistrosPendentes(
-  //   SincronizarRegistrosPendentes event,
-  //   Emitter<RegistroState> emit,
-  // ) async {
-  //   if (!_connectivityService.isOnline) {
-  //     emit(
-  //       RegistroErro(
-  //         mensagem: 'Sem conexão com a internet. Não é possível sincronizar.',
-  //       ),
-  //     );
-  //     return;
-  //   }
+  Future<void> _onCriarNovoRegistroComLocalizacao(
+    CriarNovoRegistroComLocalizacao event,
+    Emitter<RegistroState> emit,
+  ) async {
+    emit(RegistroCarregando());
+    try {
+      await _registroRepository.criarRegistro(
+        usuarioId: event.usuarioId,
+        usuarioNome: event.usuarioNome,
+        categoria: event.categoria,
+        caminhoFotoTemporario: event.caminhoFotoTemporario,
+        latitudeAtual: event.latitude,
+        longitudeAtual: event.longitude,
+        observation: event.observation,
+      );
 
-  //   emit(RegistroCarregando());
-  //   try {
+      // Emitir mensagem de sucesso
+      emit(RegistroOperacaoSucesso(mensagem: 'Registro criado com sucesso!'));
 
-  //         await _registroRepository.sincronizarRegistrosPendentes();
+      // Carregar registros atualizados
+      final registros = await _registroRepository.obterTodosRegistros();
+      emit(
+        RegistroCarregado(
+          registros: registros,
+          estaOnline: _connectivityService.isOnline,
+        ),
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Erro ao criar registro: $e');
+      }
 
-  //     // emit(
-  //     //   RegistroOperacaoSucesso(
-  //     //     mensagem:
-  //     //         'Sincronização concluída: $quantidadeSincronizada registros sincronizados.',
-  //     //   ),
-  //     // );
+      // Personalizar mensagem baseada no tipo de erro
+      String mensagem = 'Erro ao criar registro: $e';
+      if (e is ApiException && e.statusCode == 400) {
+        mensagem = e.message; // Usa a mensagem específica do servidor
+      }
 
-  //     final registros = await _registroRepository.obterTodosRegistros();
-  //     emit(
-  //       RegistroCarregado(
-  //         registros: registros,
-  //         estaOnline: _connectivityService.isOnline,
-  //       ),
-  //     );
-  //   } catch (e) {
-  //     emit(RegistroErro(mensagem: 'Erro ao sincronizar registros: $e'));
-  //   }
-  // }
+      emit(RegistroErro(mensagem: mensagem));
+
+      try {
+        final registros = await _registroRepository.obterTodosRegistros();
+        emit(
+          RegistroCarregado(
+            registros: registros,
+            estaOnline: _connectivityService.isOnline,
+          ),
+        );
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _onSincronizarRegistrosPendentes(
+    SincronizarRegistrosPendentes event,
+    Emitter<RegistroState> emit,
+  ) async {
+    if (!_connectivityService.isOnline) {
+      // Mostrar mensagem de erro apenas se não for modo silencioso
+      if (!event.silencioso) {
+        ScaffoldMessenger.of(event.context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Sem conexão com a internet. Não é possível sincronizar.',
+            ),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Obtém o estado atual para preservá-lo
+    RegistroState estadoAtual = state;
+
+    try {
+      // Aqui fazemos a sincronização sem mudar o estado para "Carregando"
+      final quantidadeSincronizada =
+          await _registroRepository.sincronizarRegistrosPendentes();
+
+      // Se sincronizamos algo e não estamos em modo silencioso, mostrar feedback
+      if (quantidadeSincronizada > 0 && !event.silencioso) {
+        ScaffoldMessenger.of(event.context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '$quantidadeSincronizada registro(s) sincronizado(s)',
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      // Carrega os registros atualizados
+      final registros = await _registroRepository.obterTodosRegistros();
+
+      // Emite o novo estado mas mantém a UI consistente com o estado atual
+      // Isso evita o efeito de "piscar" ou aparecer carregando
+      if (estadoAtual is RegistroCarregado) {
+        emit(
+          RegistroCarregado(
+            registros: registros,
+            estaOnline: _connectivityService.isOnline,
+          ),
+        );
+      }
+    } catch (e) {
+      // Em caso de erro, mostrar feedback apenas se não estiver em modo silencioso
+      if (!event.silencioso) {
+        ScaffoldMessenger.of(event.context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao sincronizar: ${e.toString()}'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        // Apenas log no console para modo silencioso
+        if (kDebugMode) {
+          print('Erro na sincronização automática: $e');
+        }
+      }
+    }
+  }
+
+  // Método handler para sincronização silenciosa (sem feedback de UI)
+  Future<void> _onSincronizarSilenciosamente(
+    _SincronizarRegistrosSilenciosamente event,
+    Emitter<RegistroState> emit,
+  ) async {
+    if (!_connectivityService.isOnline) {
+      return;
+    }
+
+    try {
+      // Sincroniza silenciosamente sem feedback na UI
+      await _registroRepository.sincronizarRegistrosPendentes();
+
+      // Atualiza a lista de registros apenas se já estiver em um estado carregado
+      if (state is RegistroCarregado) {
+        final registros = await _registroRepository.obterTodosRegistros();
+        emit(
+          RegistroCarregado(
+            registros: registros,
+            estaOnline: _connectivityService.isOnline,
+          ),
+        );
+      }
+    } catch (e) {
+      // Ignora erros na sincronização silenciosa
+      if (kDebugMode) {
+        print("Erro na sincronização silenciosa: $e");
+      }
+    }
+  }
 
   Future<void> _onRemoverRegistro(
     RemoverRegistro event,
@@ -231,13 +398,36 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         ),
       );
     } catch (e) {
-      emit(RegistroErro(mensagem: 'Erro ao remover registro: $e'));
+      if (kDebugMode) {
+        print('Erro ao remover registro: $e');
+      }
+
+      // Personalizar mensagem baseada no tipo de erro
+      String mensagem = 'Erro ao remover registro: $e';
+      if (e is ApiException) {
+        mensagem = e.message; // Usa a mensagem específica do servidor
+      }
+
+      emit(RegistroErro(mensagem: mensagem));
+
+      // Recarrega a lista mesmo em caso de erro para manter consistência
+      try {
+        final registros = await _registroRepository.obterTodosRegistros();
+        emit(
+          RegistroCarregado(
+            registros: registros,
+            estaOnline: _connectivityService.isOnline,
+          ),
+        );
+      } catch (_) {}
     }
   }
 
   void _onConexaoAlterada(ConexaoAlterada event, Emitter<RegistroState> emit) {
     if (event.estaOnline) {
-      add(SincronizarRegistrosPendentes());
+      // A sincronização automática não pode usar o ScaffoldMessenger sem contexto
+      // então usamos a versão silenciosa
+      add(_SincronizarRegistrosSilenciosamente());
     } else if (state is RegistroCarregado) {
       final estadoAtual = state as RegistroCarregado;
       emit(
@@ -250,50 +440,5 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   Future<void> close() {
     _conectividadeSubscription?.cancel();
     return super.close();
-  }
-
-  Future<void> _onCriarNovoRegistroComLocalizacao(
-    CriarNovoRegistroComLocalizacao event,
-    Emitter<RegistroState> emit,
-  ) async {
-    emit(RegistroCarregando());
-    try {
-      await _registroRepository.criarRegistro(
-        usuarioId: event.usuarioId,
-        usuarioNome: event.usuarioNome,
-        categoria: event.categoria,
-        caminhoFotoTemporario: event.caminhoFotoTemporario,
-        latitudeAtual: event.latitude,
-        longitudeAtual: event.longitude,
-      );
-
-      // Como a localização já foi capturada no momento da foto, não precisamos
-      // revalidar a proximidade - o registro sempre será pendente
-
-      // Emitir mensagem de sucesso
-      emit(RegistroOperacaoSucesso(mensagem: 'Registro criado com sucesso!'));
-
-      // Carregar registros atualizados
-      final registros = await _registroRepository.obterTodosRegistros();
-      emit(
-        RegistroCarregado(
-          registros: registros,
-          estaOnline: _connectivityService.isOnline,
-        ),
-      );
-    } catch (e) {
-      print('Erro ao criar registro: $e');
-      emit(RegistroErro(mensagem: 'Erro ao criar registro: $e'));
-
-      try {
-        final registros = await _registroRepository.obterTodosRegistros();
-        emit(
-          RegistroCarregado(
-            registros: registros,
-            estaOnline: _connectivityService.isOnline,
-          ),
-        );
-      } catch (_) {}
-    }
   }
 }

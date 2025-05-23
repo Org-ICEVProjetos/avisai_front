@@ -30,36 +30,37 @@ class LocalStorageService {
   Future<void> _onCreate(Database db, int version) async {
     // Tabela de usuários
     await db.execute('''
-      CREATE TABLE usuarios (
-        id TEXT PRIMARY KEY,
-        nome TEXT NOT NULL,
-        cpf TEXT NOT NULL UNIQUE,
-        email TEXT NOT NULL,
-        senha TEXT NOT NULL
-      )
-    ''');
+    CREATE TABLE usuarios (
+      id TEXT PRIMARY KEY,
+      nome TEXT NOT NULL,
+      cpf TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL,
+      senha TEXT NOT NULL
+    )
+  ''');
 
     // Tabela de registros
     await db.execute('''
-    CREATE TABLE IF NOT EXISTS registros (
-      id TEXT PRIMARY KEY,
-      usuarioId TEXT,
-      usuarioNome TEXT,
-      categoria TEXT,
-      dataHora TEXT,
-      latitude REAL,
-      longitude REAL,
-      endereco TEXT,
-      rua TEXT,
-      bairro TEXT,
-      cidade TEXT,
-      base64Foto TEXT,
-      status TEXT,
-      sincronizado INTEGER,
-      validadoPorUsuarioId TEXT,
-      dataValidacao TEXT
-    )
-  ''');
+  CREATE TABLE IF NOT EXISTS registros (
+    id TEXT PRIMARY KEY,
+    usuarioId TEXT,
+    usuarioNome TEXT,
+    categoria TEXT,
+    dataHora TEXT,
+    latitude REAL,
+    longitude REAL,
+    endereco TEXT,
+    rua TEXT,
+    bairro TEXT,
+    cidade TEXT,
+    base64Foto TEXT,
+    observation TEXT,
+    status TEXT,
+    sincronizado INTEGER,
+    validadoPorUsuarioId TEXT,
+    dataValidacao TEXT
+  )
+''');
   }
 
   // Métodos para Usuário
@@ -127,39 +128,6 @@ class LocalStorageService {
     return List.generate(maps.length, (i) {
       return Registro.fromJson(maps[i]);
     });
-  }
-
-  Future<List<Registro>> getRegistrosProximos(
-    double latitude,
-    double longitude,
-    double raioMetros,
-    CategoriaIrregularidade categoria,
-  ) async {
-    // Dada a complexidade de calcular distâncias em SQL para SQLite,
-    // vamos buscar todos os registros da categoria e filtrar em memória
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'registros',
-      where: 'categoria = ?',
-      whereArgs: [categoria.toString()],
-    );
-
-    // Converter para objetos Registro
-    final registros = List.generate(maps.length, (i) {
-      return Registro.fromJson(maps[i]);
-    });
-
-    // Filtrar por distância usando o LocationService
-    final locationService = LocationService();
-    return registros.where((registro) {
-      final distancia = locationService.calculateDistance(
-        latitude,
-        longitude,
-        registro.latitude,
-        registro.longitude,
-      );
-      return distancia <= raioMetros;
-    }).toList();
   }
 
   Future<void> insertRegistro(Registro registro) async {
