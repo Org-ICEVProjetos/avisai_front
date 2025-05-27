@@ -43,9 +43,7 @@ class Usuario {
     );
   }
 
-  // Adicionar este método estático na classe Usuario
   static String _corrigirTextoAcentuado(String texto) {
-    // Mapeamento de padrões de texto com codificação incorreta
     final Map<String, String> substituicoes = {
       'Ã£': 'ã',
       'Ã¡': 'á',

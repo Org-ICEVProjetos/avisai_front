@@ -14,7 +14,6 @@ ThemeData appTheme() {
     scaffoldBackgroundColor: Colors.white,
     cardColor: Colors.white,
 
-    // Usando a fonte Inter local
     fontFamily: 'Inter',
     textTheme: const TextTheme(
       displayLarge: TextStyle(
@@ -103,21 +102,15 @@ ThemeData appTheme() {
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: BorderSide.none, // Sem borda
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: BorderSide(
-          color: Color(0xFFE6E6E6), // cor da borda quando não está focado
-          width: 0.5, // espessura da borda
-        ),
+        borderSide: BorderSide(color: Color(0xFFE6E6E6), width: 0.5),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: BorderSide(
-          color: Color(0xFFE6E6E6), // cor da borda quando não está focado
-          width: 0.5, // espessura da borda
-        ),
+        borderSide: BorderSide(color: Color(0xFFE6E6E6), width: 0.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),

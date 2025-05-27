@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:avisai4/bloc/registro/registro_bloc.dart';
+import 'package:avisai4/data/providers/api_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -8,7 +9,6 @@ import '../../../bloc/connectivity/connectivity_bloc.dart';
 import '../registro/novo_registro_screen.dart';
 import '../registro/meus_registros_screen.dart';
 import '../mapa/mapa_irregularidades_screen.dart';
-import '../auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int index;
@@ -21,55 +21,35 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late int _indiceAbaSelecionada;
   final List<Widget> _telas = [];
-  Timer? _autoSyncTimer; // Timer para sincronização automática
+  StreamSubscription? _logoutSubscription;
+  ApiProvider apiProvider = ApiProvider();
 
   @override
   void initState() {
     super.initState();
     _indiceAbaSelecionada = widget.index;
-
-    solicitarPermissaoCamera();
-
-    // Configura o timer para sincronizar a cada 30 segundos
-    _iniciarSincronizacaoAutomatica();
-  }
-
-  void _iniciarSincronizacaoAutomatica() {
-    // Cancela qualquer timer existente
-    _autoSyncTimer?.cancel();
-
-    // Cria um novo timer que executa a cada 30 segundos
-    _autoSyncTimer = Timer.periodic(Duration(seconds: 30), (timer) {
-      // Verifica se o widget ainda está montado e se há conectividade
-      if (!mounted) return;
-
-      final connectivityState = context.read<ConnectivityBloc>().state;
-      if (connectivityState is ConnectivityConnected) {
-        // Usa o evento de sincronização silenciosa (sem mostrar feedback ao usuário)
-        context.read<RegistroBloc>().add(
-          SincronizarRegistrosPendentes(context: context, silencioso: true),
-        );
+    _logoutSubscription = apiProvider.logoutForcadoStream.listen((needsLogout) {
+      if (needsLogout) {
+        _forcarLogout(context);
       }
     });
+    solicitarPermissaoCamera();
   }
 
   @override
   void dispose() {
-    // Cancela o timer quando o widget é destruído
-    _autoSyncTimer?.cancel();
     super.dispose();
+    _logoutSubscription?.cancel();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // Obter usuário autenticado
     final authState = context.read<AuthBloc>().state;
     if (authState is Autenticado) {
       final usuario = authState.usuario;
 
-      // Inicializar telas com base no índice atual
       _telas.clear();
       _telas.addAll([
         MeusRegistrosScreen(usuarioId: usuario.id!),
@@ -86,9 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void setState(VoidCallback fn) {
     super.setState(fn);
-    // Atualizar as telas quando o índice mudar
     if (_telas.length > 1 && _telas[1] is NovoRegistroScreen) {
-      // Recriar a tela de registro com a visibilidade atualizada
       final authState = context.read<AuthBloc>().state;
       if (authState is Autenticado) {
         final usuario = authState.usuario;
@@ -102,7 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<bool> solicitarPermissaoCamera() async {
-    // Solicita a permissão de câmera
     PermissionStatus status = await Permission.camera.request();
     await Permission.location.request();
     if (status.isGranted) {
@@ -111,12 +88,10 @@ class _HomeScreenState extends State<HomeScreen> {
       await openAppSettings();
       return false;
     } else {
-      // Permissão negada (não permanentemente)
       return false;
     }
   }
 
-  // Título personalizado com base na aba selecionada
   String _getTitulo() {
     switch (_indiceAbaSelecionada) {
       case 0:
@@ -130,43 +105,33 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Ações personalizadas com base na aba selecionada
   List<Widget> _getAcoes() {
     List<Widget> acoes = [];
 
-    // Botão de logout para todas as abas
     acoes.add(
       IconButton(
         icon: const Icon(Icons.logout, size: 30),
         onPressed: () {
-          // Mostrar diálogo de confirmação
           showDialog(
             context: context,
             builder: (BuildContext context) {
-              // Get screen size
               final Size screenSize = MediaQuery.of(context).size;
               final double screenWidth = screenSize.width;
               final double screenHeight = screenSize.height;
 
-              // Calculate responsive sizes
-              final double titleFontSize =
-                  screenWidth * 0.05; // 5% of screen width
-              final double bodyFontSize =
-                  screenWidth * 0.04; // 4% of screen width
-              final double buttonHeight =
-                  screenHeight * 0.06; // 6% of screen height
+              final double titleFontSize = screenWidth * 0.05;
+              final double bodyFontSize = screenWidth * 0.04;
+              final double buttonHeight = screenHeight * 0.06;
 
               return AlertDialog(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    screenWidth * 0.04,
-                  ), // Responsive border radius
+                  borderRadius: BorderRadius.circular(screenWidth * 0.04),
                 ),
                 contentPadding: EdgeInsets.fromLTRB(
-                  screenWidth * 0.06, // Left padding
-                  screenHeight * 0.03, // Top padding
-                  screenWidth * 0.06, // Right padding
-                  screenHeight * 0.02, // Bottom padding
+                  screenWidth * 0.06,
+                  screenHeight * 0.03,
+                  screenWidth * 0.06,
+                  screenHeight * 0.02,
                 ),
                 title: Text(
                   'Sair',
@@ -189,17 +154,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   textAlign: TextAlign.center,
                 ),
                 actionsPadding: EdgeInsets.fromLTRB(
-                  screenWidth * 0.06, // Left padding
-                  0, // Top padding
-                  screenWidth * 0.06, // Right padding
-                  screenHeight * 0.03, // Bottom padding
+                  screenWidth * 0.06,
+                  0,
+                  screenWidth * 0.06,
+                  screenHeight * 0.03,
                 ),
                 actions: [
-                  // Layout de coluna para os botões ocuparem toda a largura
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Botão principal "Sair"
                       ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -224,18 +187,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                      SizedBox(
-                        height: screenHeight * 0.01,
-                      ), // Espaçamento entre botões
-                      // Botão secundário "Cancelar"
+                      SizedBox(height: screenHeight * 0.01),
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFF022865),
                           minimumSize: Size(
                             double.infinity,
-                            buttonHeight *
-                                0.8, // Ligeiramente menor que o botão principal
+                            buttonHeight * 0.8,
                           ),
                         ),
                         child: Text(
@@ -263,33 +222,45 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is NaoAutenticado) {
-          // Redirecionar para a tela de login se não estiver autenticado
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-          );
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is NaoAutenticado) {
+              Navigator.of(context).pushReplacementNamed('/login');
+            }
+          },
+        ),
+        BlocListener<ConnectivityBloc, ConnectivityState>(
+          listener: (context, state) {
+            if (state is ConnectivityConnected) {
+              context.read<RegistroBloc>().add(
+                SincronizarRegistrosPendentes(
+                  context: context,
+                  silencioso: true,
+                ),
+              );
+            }
+          },
+        ),
+      ],
       child: Scaffold(
-        // AppBar personalizada com base na aba selecionada
         appBar: AppBar(
           title: Text(
             _getTitulo(),
             style: const TextStyle(
-              fontSize: 34, // Fonte maior
-              fontWeight: FontWeight.bold, // Negrito
+              fontSize: 34,
+              fontWeight: FontWeight.bold,
               color: Colors.white,
-              fontFamily: 'Inter', // Se quiser manter seu padrão de fontes
+              fontFamily: 'Inter',
             ),
           ),
           actions: _getAcoes(),
           backgroundColor: const Color(0xFF002569),
           centerTitle: false,
-          elevation: 0, // Sem sombra
-          foregroundColor: Colors.white, // Ícones brancos
-          toolbarHeight: 80, // <- aumenta a altura da AppBar
+          elevation: 0,
+          foregroundColor: Colors.white,
+          toolbarHeight: 80,
           automaticallyImplyLeading: false,
         ),
         body: BlocBuilder<AuthBloc, AuthState>(
@@ -304,7 +275,6 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           },
         ),
-        // BottomNavigationBar personalizada
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _indiceAbaSelecionada,
           onTap: (indice) {
@@ -313,9 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           },
           backgroundColor: Colors.white,
-          selectedItemColor: const Color(
-            0xFF002569,
-          ), // Azul escuro para o item selecionado
+          selectedItemColor: const Color(0xFF002569),
           unselectedItemColor: Colors.grey,
           items: [
             BottomNavigationBarItem(
@@ -348,5 +316,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void _forcarLogout(BuildContext context) {
+    context.read<AuthBloc>().add(LogoutSolicitado());
   }
 }

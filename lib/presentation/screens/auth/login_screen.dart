@@ -5,8 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_multi_formatter/formatters/masked_input_formatter.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../home/home_screen.dart';
-import 'register_screen.dart';
-import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,7 +23,6 @@ class _LoginScreenState extends State<LoginScreen>
   bool _carregando = false;
   bool _mostrarSenha = false;
 
-  // Animation controllers
   late AnimationController _animationController;
   late Animation<double> _fadeInAnimation;
   late Animation<Offset> _slideImageAnimation;
@@ -97,7 +94,6 @@ class _LoginScreenState extends State<LoginScreen>
       ),
     );
 
-    // Start animation after short delay
     Future.delayed(const Duration(milliseconds: 100), () {
       _animationController.forward();
     });
@@ -151,7 +147,6 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Calcular o tamanho da imagem (90% da largura, 40% da altura, máximo 400px)
     final Size screenSize = MediaQuery.of(context).size;
     final double imageWidth =
         screenSize.width * 0.9 < 400 ? screenSize.width * 0.9 : 400.0;
@@ -176,7 +171,6 @@ class _LoginScreenState extends State<LoginScreen>
               _carregando = false;
             });
           } else if (state is Autenticado) {
-            // Verificar se deve mostrar o tutorial ou ir direto para a Home
             _verificarETrocarParaTutorial();
           }
         },
@@ -192,7 +186,6 @@ class _LoginScreenState extends State<LoginScreen>
                     children: [
                       const SizedBox(height: 20),
 
-                      // Imagem principal - ilustração de login com animação
                       SlideTransition(
                         position: _slideImageAnimation,
                         child: Center(
@@ -227,7 +220,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                       const SizedBox(height: 20),
 
-                      // Título "Login" com animação
                       SlideTransition(
                         position: _slideTitleAnimation,
                         child: Text(
@@ -241,7 +233,6 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ),
 
-                      // Subtítulo com animação
                       SlideTransition(
                         position: _slideSubtitleAnimation,
                         child: Text(
@@ -257,7 +248,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                       const SizedBox(height: 30),
 
-                      // Formulário com animação
                       SlideTransition(
                         position: _slideFormAnimation,
                         child: Form(
@@ -265,7 +255,6 @@ class _LoginScreenState extends State<LoginScreen>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
-                              // Campo CPF
                               Material(
                                 elevation: 5,
                                 borderRadius: BorderRadius.circular(30),
@@ -280,11 +269,6 @@ class _LoginScreenState extends State<LoginScreen>
                                   ],
                                   style: theme.textTheme.bodyLarge,
                                   decoration: InputDecoration(
-                                    // labelText: 'CPF',
-                                    // labelStyle: TextStyle(
-                                    //   fontWeight: FontWeight.bold,
-                                    //   color: Colors.grey[500],
-                                    // ),
                                     hintText: 'Digite seu CPF',
                                     hintStyle: TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -303,13 +287,10 @@ class _LoginScreenState extends State<LoginScreen>
                                   if (errorText != null &&
                                       errorText.isNotEmpty) {
                                     return Align(
-                                      alignment:
-                                          Alignment
-                                              .centerLeft, // Força alinhamento à esquerda
+                                      alignment: Alignment.centerLeft,
                                       child: Padding(
                                         padding: const EdgeInsets.only(
-                                          left:
-                                              8.0, // Um pequeno padding para não ficar colado à borda
+                                          left: 8.0,
                                           top: 4.0,
                                         ),
                                         child: Text(
@@ -318,9 +299,7 @@ class _LoginScreenState extends State<LoginScreen>
                                             color: Colors.red,
                                             fontSize: 12,
                                           ),
-                                          textAlign:
-                                              TextAlign
-                                                  .left, // Garante que o texto esteja alinhado à esquerda
+                                          textAlign: TextAlign.left,
                                         ),
                                       ),
                                     );
@@ -332,7 +311,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                               const SizedBox(height: 20),
 
-                              // SENHA
                               Material(
                                 elevation: 5,
                                 borderRadius: BorderRadius.circular(30),
@@ -344,11 +322,6 @@ class _LoginScreenState extends State<LoginScreen>
                                   obscureText: !_mostrarSenha,
                                   style: theme.textTheme.bodyLarge,
                                   decoration: InputDecoration(
-                                    // labelText: 'Senha',
-                                    // labelStyle: TextStyle(
-                                    //   fontWeight: FontWeight.bold,
-                                    //   color: Colors.grey[500],
-                                    // ),
                                     hintText: 'Digite sua senha',
                                     hintStyle: TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -380,13 +353,10 @@ class _LoginScreenState extends State<LoginScreen>
                                   if (errorText != null &&
                                       errorText.isNotEmpty) {
                                     return Align(
-                                      alignment:
-                                          Alignment
-                                              .centerLeft, // Força alinhamento à esquerda
+                                      alignment: Alignment.centerLeft,
                                       child: Padding(
                                         padding: const EdgeInsets.only(
-                                          left:
-                                              8.0, // Um pequeno padding para não ficar colado à borda
+                                          left: 8.0,
                                           top: 4.0,
                                         ),
                                         child: Text(
@@ -395,9 +365,7 @@ class _LoginScreenState extends State<LoginScreen>
                                             color: Colors.red,
                                             fontSize: 12,
                                           ),
-                                          textAlign:
-                                              TextAlign
-                                                  .left, // Garante que o texto esteja alinhado à esquerda
+                                          textAlign: TextAlign.left,
                                         ),
                                       ),
                                     );
@@ -406,7 +374,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   }
                                 },
                               ),
-                              // Link "Esqueceu a senha" (incluído no form animation)
+
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: Padding(
@@ -416,13 +384,9 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                   child: TextButton(
                                     onPressed: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) =>
-                                                  const ForgotPasswordScreen(),
-                                        ),
-                                      );
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed('/forgot-password');
                                     },
                                     style: TextButton.styleFrom(
                                       foregroundColor: theme.primaryColor,
@@ -445,7 +409,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                       const SizedBox(height: 16),
 
-                      // Botão Entrar com fade-in animation
                       FadeTransition(
                         opacity: _fadeInButtonAnimation,
                         child: SizedBox(
@@ -491,7 +454,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                       const SizedBox(height: 30),
 
-                      // Link para cadastro também com fade-in animation
                       FadeTransition(
                         opacity: _fadeInButtonAnimation,
                         child: Row(
@@ -506,12 +468,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             TextButton(
                               onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => const RegisterScreen(),
-                                  ),
-                                );
+                                Navigator.of(context).pushNamed('/register');
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: theme.primaryColor,
@@ -543,7 +500,6 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  // Método para verificar se o tutorial deve ser mostrado e redirecionar
   Future<void> _verificarETrocarParaTutorial() async {
     await TutorialManager.verificarENavegar(
       context,

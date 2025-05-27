@@ -1,5 +1,4 @@
 import 'package:avisai4/bloc/connectivity/connectivity_bloc.dart';
-import 'package:avisai4/presentation/screens/mapa/detalhes_registro_screen.dart';
 import 'package:avisai4/presentation/screens/widgets/registro_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,8 +23,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Carregar registros quando a tela for inicializada
     context.read<RegistroBloc>().add(CarregarRegistros());
   }
 
@@ -46,44 +43,34 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
     return DateFormat('dd/MM/yyyy HH:mm').format(data);
   }
 
-  // Filtra a lista de registros com base nos filtros aplicados
   List<Registro> _filtrarRegistros(List<Registro> registros) {
     if (registros.isEmpty) {
-      print("A lista de registros está vazia!");
       return [];
     }
 
-    for (var reg in registros) {
-      print(
-        "Registro - ID: ${reg.id}, usuarioId: ${reg.usuarioId}, categoria: ${reg.categoria}",
-      );
-    }
     return registros.where((registro) {
-      // Filtrar por usuário
-      if (registro.usuarioId != widget.usuarioId) {
-        return false;
-      }
+        if (registro.usuarioId != widget.usuarioId) {
+          return false;
+        }
 
-      // Filtrar por status
-      if (_filtroStatus != null && registro.status != _filtroStatus) {
-        return false;
-      }
+        if (_filtroStatus != null && registro.status != _filtroStatus) {
+          return false;
+        }
 
-      // Filtrar por categoria
-      if (_filtroCategoria != null && registro.categoria != _filtroCategoria) {
-        return false;
-      }
+        if (_filtroCategoria != null &&
+            registro.categoria != _filtroCategoria) {
+          return false;
+        }
 
-      // Filtrar por sincronização
-      if (_apenasNaoSincronizados && registro.sincronizado) {
-        return false;
-      }
+        if (_apenasNaoSincronizados && registro.sincronizado) {
+          return false;
+        }
 
-      return true;
-    }).toList();
+        return true;
+      }).toList()
+      ..sort((a, b) => b.dataHora.compareTo(a.dataHora));
   }
 
-  // Abre o modal de filtro avançado
   void _abrirFiltroAvancado() {
     showModalBottomSheet(
       context: context,
@@ -103,7 +90,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Cabeçalho com título e botão fechar
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -118,13 +104,12 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        // Espaço vazio para centralizar o título
+
                         const SizedBox(width: 24),
                       ],
                     ),
                     const SizedBox(height: 24),
 
-                    // Classificação da irregularidade
                     const Text(
                       'Classificação da irregularidade:',
                       style: TextStyle(
@@ -134,7 +119,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Opções de classificação com checkboxes
                     _buildCheckboxOption(
                       'Todas as opções',
                       _filtroCategoria == null,
@@ -197,7 +181,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Status do registro
                     const Text(
                       'Status do registro:',
                       style: TextStyle(
@@ -207,7 +190,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Botões de status
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -233,13 +215,12 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
 
                     const SizedBox(height: 32),
 
-                    // Botão Aplicar Filtro
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
                         onPressed: () {
-                          setState(() {}); // Atualiza a UI principal
+                          setState(() {});
                           Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
@@ -268,7 +249,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
     );
   }
 
-  // Widget para construir uma opção de checkbox
   Widget _buildCheckboxOption(
     String text,
     bool checked,
@@ -297,7 +277,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
     );
   }
 
-  // Widget para construir um botão de status
   Widget _buildStatusButton(
     String text,
     StatusValidacao status,
@@ -327,9 +306,8 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
           ),
 
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          minimumSize: Size(100, 30), // permite o tamanho mínimo possível
-          tapTargetSize:
-              MaterialTapTargetSize.shrinkWrap, // reduz área de toque
+          minimumSize: Size(100, 30),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         child: Text(
           text,
@@ -392,14 +370,13 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                 return SizedBox.shrink();
               },
             ),
-            // Seção de filtros
+
             Container(
               padding: const EdgeInsets.all(16),
-              // Fundo cinza claro como na imagem
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título "Filtro" com ícone - ao clicar abre o modal
                   GestureDetector(
                     onTap: _abrirFiltroAvancado,
                     child: Row(
@@ -431,12 +408,10 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
 
                   const SizedBox(height: 12),
 
-                  // Botões de filtro (Chips)
                   SingleChildScrollView(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        // Botão Pendente
                         Flexible(
                           fit: FlexFit.loose,
                           child: OutlinedButton(
@@ -465,9 +440,7 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                                 horizontal: 12,
                               ),
                               minimumSize: Size(140, 30),
-                              tapTargetSize:
-                                  MaterialTapTargetSize
-                                      .shrinkWrap, // reduz área de toque
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: Text(
                               'Pendente',
@@ -485,7 +458,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
 
                         const SizedBox(width: 8),
 
-                        // Botão Aceito
                         Flexible(
                           fit: FlexFit.loose,
 
@@ -515,9 +487,7 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                                 horizontal: 12,
                               ),
                               minimumSize: Size(140, 30),
-                              tapTargetSize:
-                                  MaterialTapTargetSize
-                                      .shrinkWrap, // reduz área de toque
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: Text(
                               'Aceito',
@@ -535,7 +505,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
 
                         const SizedBox(width: 8),
 
-                        // Botão Recusado
                         Flexible(
                           fit: FlexFit.loose,
                           child: OutlinedButton(
@@ -564,9 +533,7 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                                 horizontal: 12,
                               ),
                               minimumSize: Size(140, 30),
-                              tapTargetSize:
-                                  MaterialTapTargetSize
-                                      .shrinkWrap, // reduz área de toque
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: Text(
                               'Recusado',
@@ -588,7 +555,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
               ),
             ),
 
-            // Lista de registros
             Expanded(child: _buildRegistrosList(state)),
           ],
         );
@@ -639,12 +605,8 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
 
       return RefreshIndicator(
         onRefresh: () async {
-          // Primeiro recarrega os registros para atualização imediata
-          context.read<RegistroBloc>().add(CarregarRegistros());
-
-          // Depois tenta a sincronização em segundo plano
           context.read<RegistroBloc>().add(
-            SincronizarRegistrosPendentes(context: context),
+            SincronizarRegistrosPendentes(context: context, silencioso: true),
           );
         },
         child: ListView.builder(
@@ -657,46 +619,36 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
               categoria: _getCategoriaTexto(registro.categoria),
               endereco: registro.endereco ?? 'Endereço não disponível',
               data: _formatarData(registro.dataHora),
-              imagemUrl: registro.base64Foto,
+              imagemUrl: registro.photoPath,
               status: registro.status,
               sincronizado: registro.sincronizado,
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder:
-                        (context) => DetalheRegistroScreen(registro: registro),
-                  ),
+                Navigator.of(context).pushNamed(
+                  '/registro/detalhe',
+                  arguments: {'registro': registro},
                 );
               },
               onDelete: () {
-                // Mostrar diálogo de confirmação
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
-                    // Get screen size
                     final Size screenSize = MediaQuery.of(context).size;
                     final double screenWidth = screenSize.width;
                     final double screenHeight = screenSize.height;
 
-                    // Calculate responsive sizes
-                    final double titleFontSize =
-                        screenWidth * 0.05; // 5% of screen width
-                    final double bodyFontSize =
-                        screenWidth * 0.04; // 4% of screen width
-                    final double buttonHeight =
-                        screenHeight * 0.06; // 6% of screen height
+                    final double titleFontSize = screenWidth * 0.05;
+                    final double bodyFontSize = screenWidth * 0.04;
+                    final double buttonHeight = screenHeight * 0.06;
 
                     return AlertDialog(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          screenWidth * 0.04,
-                        ), // Responsive border radius
+                        borderRadius: BorderRadius.circular(screenWidth * 0.04),
                       ),
                       contentPadding: EdgeInsets.fromLTRB(
-                        screenWidth * 0.06, // Left padding
-                        screenHeight * 0.03, // Top padding
-                        screenWidth * 0.06, // Right padding
-                        screenHeight * 0.02, // Bottom padding
+                        screenWidth * 0.06,
+                        screenHeight * 0.03,
+                        screenWidth * 0.06,
+                        screenHeight * 0.02,
                       ),
                       title: Text(
                         'Remover registro',
@@ -719,22 +671,23 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                         textAlign: TextAlign.center,
                       ),
                       actionsPadding: EdgeInsets.fromLTRB(
-                        screenWidth * 0.06, // Left padding
-                        0, // Top padding
-                        screenWidth * 0.06, // Right padding
-                        screenHeight * 0.03, // Bottom padding
+                        screenWidth * 0.06,
+                        0,
+                        screenWidth * 0.06,
+                        screenHeight * 0.03,
                       ),
                       actions: [
-                        // Layout de coluna para os botões ocuparem toda a largura
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Botão principal "Remover"
                             ElevatedButton(
                               onPressed: () {
                                 Navigator.of(context).pop();
                                 context.read<RegistroBloc>().add(
-                                  RemoverRegistro(registroId: registro.id!),
+                                  RemoverRegistro(
+                                    registro.sincronizado,
+                                    registro.id!,
+                                  ),
                                 );
                               },
                               style: ElevatedButton.styleFrom(
@@ -759,18 +712,15 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                               ),
                             ),
 
-                            SizedBox(
-                              height: screenHeight * 0.01,
-                            ), // Espaçamento entre botões
-                            // Botão secundário "Cancelar"
+                            SizedBox(height: screenHeight * 0.01),
+
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(),
                               style: TextButton.styleFrom(
                                 foregroundColor: Colors.grey[700],
                                 minimumSize: Size(
                                   double.infinity,
-                                  buttonHeight *
-                                      0.8, // Ligeiramente menor que o botão principal
+                                  buttonHeight * 0.8,
                                 ),
                               ),
                               child: Text(

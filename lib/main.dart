@@ -2,21 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/registro_repository.dart';
-
 import 'data/providers/api_provider.dart';
 import 'services/connectivity_service.dart';
 import 'services/local_storage_service.dart';
 import 'services/location_service.dart';
-
 import 'bloc/auth/auth_bloc.dart';
 import 'bloc/registro/registro_bloc.dart';
 import 'bloc/connectivity/connectivity_bloc.dart';
 import 'config/theme.dart';
 import 'config/routes.dart';
-
 import 'presentation/screens/auth/splash_screen.dart';
 
 void main() async {

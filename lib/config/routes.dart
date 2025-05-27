@@ -1,3 +1,5 @@
+import 'package:avisai4/presentation/screens/auth/change_password_screen.dart';
+import 'package:avisai4/presentation/screens/auth/verificar_token_password.dart';
 import 'package:avisai4/presentation/screens/mapa/detalhes_registro_screen.dart';
 import 'package:flutter/material.dart';
 import '../presentation/screens/auth/forgot_password_screen.dart';
@@ -14,6 +16,16 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/login': (context) => const LoginScreen(),
   '/register': (context) => const RegisterScreen(),
   '/forgot-password': (context) => const ForgotPasswordScreen(),
+  '/verify-token': (context) {
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    return VerifyTokenScreen(cpf: args['cpf'], email: args['email']);
+  },
+  '/change-password': (context) {
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    return ChangePasswordScreen(token: args['token']);
+  },
   '/home': (context) => const HomeScreen(index: 1),
   '/registro/novo': (context) {
     final args =
@@ -35,62 +47,3 @@ final Map<String, WidgetBuilder> appRoutes = {
   },
   '/mapa': (context) => const MapaIrregularidadesScreen(),
 };
-
-class AppNavigator {
-  static void navigateToHome(BuildContext context) {
-    Navigator.of(context).pushReplacementNamed('/home');
-  }
-
-  static void navigateToLogin(BuildContext context) {
-    Navigator.of(context).pushReplacementNamed('/login');
-  }
-
-  static void navigateToRegister(BuildContext context) {
-    Navigator.of(context).pushNamed('/register');
-  }
-
-  static void navigateToForgotPassword(BuildContext context) {
-    Navigator.of(context).pushNamed('/forgot-password');
-  }
-
-  static void navigateToNovoRegistro(
-    BuildContext context, {
-    required String usuarioId,
-    required String usuarioNome,
-  }) {
-    Navigator.of(context).pushNamed(
-      '/registro/novo',
-      arguments: {'usuarioId': usuarioId, 'usuarioNome': usuarioNome},
-    );
-  }
-
-  static void navigateToMeusRegistros(
-    BuildContext context, {
-    required String usuarioId,
-  }) {
-    Navigator.of(
-      context,
-    ).pushNamed('/registro/meus', arguments: {'usuarioId': usuarioId});
-  }
-
-  static void navigateToDetalheRegistro(
-    BuildContext context, {
-    required dynamic registro,
-  }) {
-    Navigator.of(
-      context,
-    ).pushNamed('/registro/detalhe', arguments: {'registro': registro});
-  }
-
-  static void navigateToMapa(BuildContext context) {
-    Navigator.of(context).pushNamed('/mapa');
-  }
-
-  static void goBack(BuildContext context) {
-    Navigator.of(context).pop();
-  }
-
-  static void goBackToHome(BuildContext context) {
-    Navigator.of(context).popUntil(ModalRoute.withName('/home'));
-  }
-}

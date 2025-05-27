@@ -5,7 +5,7 @@ import '../../../bloc/auth/auth_bloc.dart';
 class ChangePasswordScreen extends StatefulWidget {
   final String token;
 
-  const ChangePasswordScreen({Key? key, required this.token}) : super(key: key);
+  const ChangePasswordScreen({super.key, required this.token});
 
   @override
   _ChangePasswordScreenState createState() => _ChangePasswordScreenState();
@@ -22,7 +22,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
   bool _mostrarSenha = false;
   bool _mostrarConfirmSenha = false;
 
-  // Animation controllers
   late AnimationController _animationController;
   late Animation<double> _fadeInAnimation;
   late Animation<Offset> _slideTextAnimation;
@@ -35,13 +34,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
   void initState() {
     super.initState();
 
-    // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
 
-    // Fade in animation for the whole screen
     _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
@@ -49,7 +46,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
       ),
     );
 
-    // Slide animations for each element
     _slideTextAnimation = Tween<Offset>(
       begin: const Offset(-0.5, 0),
       end: Offset.zero,
@@ -100,7 +96,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
       ),
     );
 
-    // Start animation after short delay
     Future.delayed(const Duration(milliseconds: 100), () {
       _animationController.forward();
     });
@@ -210,7 +205,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
               ),
             );
 
-            // Navegar para a tela de login
             Navigator.of(context).popUntil((route) => route.isFirst);
           }
         },
@@ -223,7 +217,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Texto explicativo com animação
                     SlideTransition(
                       position: _slideTextAnimation,
                       child: Text.rich(
@@ -253,12 +246,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
                     ),
                     const SizedBox(height: 32),
 
-                    // Formulário com animações
                     Form(
                       key: _formKey,
                       child: Column(
                         children: [
-                          // Campo Senha com animação
                           SlideTransition(
                             position: _slideForm1Animation,
                             child: Column(
@@ -335,7 +326,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
                           ),
                           const SizedBox(height: 16),
 
-                          // Campo Confirmar Senha com animação
                           SlideTransition(
                             position: _slideForm2Animation,
                             child: Column(
@@ -419,7 +409,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
 
                     const SizedBox(height: 24),
 
-                    // Botão Alterar Senha com animação
                     SlideTransition(
                       position: _slideButtonAnimation,
                       child: SizedBox(
@@ -456,7 +445,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
 
                     const SizedBox(height: 32),
 
-                    // Imagem com animação
                     SlideTransition(
                       position: _slideImageAnimation,
                       child: Center(

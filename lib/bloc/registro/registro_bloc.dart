@@ -17,45 +17,6 @@ abstract class RegistroEvent extends Equatable {
 
 class CarregarRegistros extends RegistroEvent {}
 
-class CriarNovoRegistro extends RegistroEvent {
-  final String usuarioId;
-  final String usuarioNome;
-  final CategoriaIrregularidade categoria;
-  final String caminhoFotoTemporario;
-
-  CriarNovoRegistro({
-    required this.usuarioId,
-    required this.usuarioNome,
-    required this.categoria,
-    required this.caminhoFotoTemporario,
-  });
-
-  @override
-  List<Object> get props => [usuarioId, categoria, caminhoFotoTemporario];
-}
-
-class VerificarEValidarRegistrosProximos extends RegistroEvent {
-  final CategoriaIrregularidade categoria;
-  final String validadorUsuarioId;
-  final double latitude;
-  final double longitude;
-
-  VerificarEValidarRegistrosProximos({
-    required this.categoria,
-    required this.validadorUsuarioId,
-    required this.latitude,
-    required this.longitude,
-  });
-
-  @override
-  List<Object> get props => [
-    categoria,
-    validadorUsuarioId,
-    latitude,
-    longitude,
-  ];
-}
-
 class CriarNovoRegistroComLocalizacao extends RegistroEvent {
   final String usuarioId;
   final String usuarioNome;
@@ -63,7 +24,7 @@ class CriarNovoRegistroComLocalizacao extends RegistroEvent {
   final String caminhoFotoTemporario;
   final double latitude;
   final double longitude;
-  final String? observation; // NOVO CAMPO
+  final String? observation;
 
   CriarNovoRegistroComLocalizacao({
     required this.usuarioId,
@@ -72,7 +33,7 @@ class CriarNovoRegistroComLocalizacao extends RegistroEvent {
     required this.caminhoFotoTemporario,
     required this.latitude,
     required this.longitude,
-    this.observation, // NOVO PARÂMETRO
+    this.observation,
   });
 
   @override
@@ -82,15 +43,12 @@ class CriarNovoRegistroComLocalizacao extends RegistroEvent {
     caminhoFotoTemporario,
     latitude,
     longitude,
-    observation ?? '', // Incluir na comparação
+    observation ?? '',
   ];
 }
 
-// Atualize o evento SincronizarRegistrosPendentes para adicionar opção silenciosa
 class SincronizarRegistrosPendentes extends RegistroEvent {
-  // Adicionando BuildContext para acessar ScaffoldMessenger
   final BuildContext context;
-  // Adicionando opção para sincronização silenciosa (sem feedback)
   final bool silencioso;
 
   SincronizarRegistrosPendentes({
@@ -102,16 +60,16 @@ class SincronizarRegistrosPendentes extends RegistroEvent {
   List<Object> get props => [context, silencioso];
 }
 
-// Classe de evento interno para sincronização silenciosa
 class _SincronizarRegistrosSilenciosamente extends RegistroEvent {}
 
 class RemoverRegistro extends RegistroEvent {
   final String registroId;
+  final bool isSincronizado;
 
-  RemoverRegistro({required this.registroId});
+  RemoverRegistro(this.isSincronizado, this.registroId);
 
   @override
-  List<Object> get props => [registroId];
+  List<Object> get props => [registroId, isSincronizado];
 }
 
 class ConexaoAlterada extends RegistroEvent {
@@ -185,6 +143,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         });
   }
 
+  // Carrega os registros na tela
   Future<void> _onCarregarRegistros(
     CarregarRegistros event,
     Emitter<RegistroState> emit,
@@ -203,15 +162,13 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         print('Erro ao carregar registros: $e');
       }
 
-      // Personalizar mensagem baseada no tipo de erro
       String mensagem = 'Erro ao carregar registros: $e';
       if (e is ApiException) {
-        mensagem = e.message; // Usa a mensagem específica do servidor
+        mensagem = e.message;
       }
 
       emit(RegistroErro(mensagem: mensagem));
 
-      // Tenta carregar os registros locais em caso de erro
       try {
         final registrosLocais = await _localStorage.getRegistros();
         emit(
@@ -224,6 +181,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
     }
   }
 
+  // Cria novo registro
   Future<void> _onCriarNovoRegistroComLocalizacao(
     CriarNovoRegistroComLocalizacao event,
     Emitter<RegistroState> emit,
@@ -240,11 +198,8 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         observation: event.observation,
       );
 
-      // Emitir mensagem de sucesso
-      emit(RegistroOperacaoSucesso(mensagem: 'Registro criado com sucesso!'));
-
-      // Carregar registros atualizados
       final registros = await _registroRepository.obterTodosRegistros();
+      emit(RegistroOperacaoSucesso(mensagem: 'Registro criado com sucesso!'));
       emit(
         RegistroCarregado(
           registros: registros,
@@ -256,10 +211,9 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         print('Erro ao criar registro: $e');
       }
 
-      // Personalizar mensagem baseada no tipo de erro
       String mensagem = 'Erro ao criar registro: $e';
       if (e is ApiException && e.statusCode == 400) {
-        mensagem = e.message; // Usa a mensagem específica do servidor
+        mensagem = e.message;
       }
 
       emit(RegistroErro(mensagem: mensagem));
@@ -276,12 +230,12 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
     }
   }
 
+  // Sincroniza registros salvos localemente que não está no banco de dados remoto
   Future<void> _onSincronizarRegistrosPendentes(
     SincronizarRegistrosPendentes event,
     Emitter<RegistroState> emit,
   ) async {
     if (!_connectivityService.isOnline) {
-      // Mostrar mensagem de erro apenas se não for modo silencioso
       if (!event.silencioso) {
         ScaffoldMessenger.of(event.context).showSnackBar(
           const SnackBar(
@@ -296,15 +250,12 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
       return;
     }
 
-    // Obtém o estado atual para preservá-lo
     RegistroState estadoAtual = state;
 
     try {
-      // Aqui fazemos a sincronização sem mudar o estado para "Carregando"
       final quantidadeSincronizada =
           await _registroRepository.sincronizarRegistrosPendentes();
 
-      // Se sincronizamos algo e não estamos em modo silencioso, mostrar feedback
       if (quantidadeSincronizada > 0 && !event.silencioso) {
         ScaffoldMessenger.of(event.context).showSnackBar(
           SnackBar(
@@ -317,11 +268,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         );
       }
 
-      // Carrega os registros atualizados
       final registros = await _registroRepository.obterTodosRegistros();
-
-      // Emite o novo estado mas mantém a UI consistente com o estado atual
-      // Isso evita o efeito de "piscar" ou aparecer carregando
       if (estadoAtual is RegistroCarregado) {
         emit(
           RegistroCarregado(
@@ -331,7 +278,6 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         );
       }
     } catch (e) {
-      // Em caso de erro, mostrar feedback apenas se não estiver em modo silencioso
       if (!event.silencioso) {
         ScaffoldMessenger.of(event.context).showSnackBar(
           SnackBar(
@@ -341,7 +287,6 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
           ),
         );
       } else {
-        // Apenas log no console para modo silencioso
         if (kDebugMode) {
           print('Erro na sincronização automática: $e');
         }
@@ -349,7 +294,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
     }
   }
 
-  // Método handler para sincronização silenciosa (sem feedback de UI)
+  // Sincroniza silenciosamente (não mostra tela de carregamento) os registros
   Future<void> _onSincronizarSilenciosamente(
     _SincronizarRegistrosSilenciosamente event,
     Emitter<RegistroState> emit,
@@ -359,10 +304,8 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
     }
 
     try {
-      // Sincroniza silenciosamente sem feedback na UI
       await _registroRepository.sincronizarRegistrosPendentes();
 
-      // Atualiza a lista de registros apenas se já estiver em um estado carregado
       if (state is RegistroCarregado) {
         final registros = await _registroRepository.obterTodosRegistros();
         emit(
@@ -373,20 +316,23 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         );
       }
     } catch (e) {
-      // Ignora erros na sincronização silenciosa
       if (kDebugMode) {
         print("Erro na sincronização silenciosa: $e");
       }
     }
   }
 
+  // Remove registro
   Future<void> _onRemoverRegistro(
     RemoverRegistro event,
     Emitter<RegistroState> emit,
   ) async {
     emit(RegistroCarregando());
     try {
-      await _registroRepository.removerRegistro(event.registroId);
+      await _registroRepository.removerRegistro(
+        event.registroId,
+        event.isSincronizado,
+      );
 
       emit(RegistroOperacaoSucesso(mensagem: 'Registro removido com sucesso.'));
 
@@ -402,15 +348,12 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         print('Erro ao remover registro: $e');
       }
 
-      // Personalizar mensagem baseada no tipo de erro
       String mensagem = 'Erro ao remover registro: $e';
       if (e is ApiException) {
-        mensagem = e.message; // Usa a mensagem específica do servidor
+        mensagem = e.message;
       }
 
       emit(RegistroErro(mensagem: mensagem));
-
-      // Recarrega a lista mesmo em caso de erro para manter consistência
       try {
         final registros = await _registroRepository.obterTodosRegistros();
         emit(
@@ -423,10 +366,9 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
     }
   }
 
+  // Verifca alteração de conexão para sincronização automática
   void _onConexaoAlterada(ConexaoAlterada event, Emitter<RegistroState> emit) {
     if (event.estaOnline) {
-      // A sincronização automática não pode usar o ScaffoldMessenger sem contexto
-      // então usamos a versão silenciosa
       add(_SincronizarRegistrosSilenciosamente());
     } else if (state is RegistroCarregado) {
       final estadoAtual = state as RegistroCarregado;

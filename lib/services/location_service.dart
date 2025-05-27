@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
@@ -11,11 +11,9 @@ class LocationService {
   factory LocationService() => _instance;
   LocationService._internal();
 
-  // Obtém a localização atual do usuário
+  // Méotodo que pega a localização atual para mostrar no mapa
   Future<Position> getCurrentLocation() async {
     LocationPermission permission;
-
-    // Verifica permissões
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -35,7 +33,6 @@ class LocationService {
       );
     }
 
-    // Obtém a localização atual
     return await Geolocator.getCurrentPosition(
       locationSettings: AndroidSettings(
         accuracy: LocationAccuracy.best,
@@ -50,14 +47,13 @@ class LocationService {
     double longitude,
   ) async {
     try {
-      // Primeiro tenta usar a API do Google Maps
       return await _getAddressFromOpenStreetMap(latitude, longitude);
     } catch (e) {
-      // Se falhar, usar o geocoding local
       return await _getAddressFromGeocoding(latitude, longitude);
     }
   }
 
+  // Obtém endereço pela API do OpenStreetMap
   Future<Map<String, String>> _getAddressFromOpenStreetMap(
     double latitude,
     double longitude,
@@ -68,21 +64,16 @@ class LocationService {
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'User-Agent': 'Avisai/1.0', // Importante para a API Nominatim
-        },
+        headers: {'User-Agent': 'Avisai/1.0'},
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // Extrair componentes do endereço
         final addressComponents = data['address'] as Map<String, dynamic>;
 
-        // Endereço completo
         final endereco = data['display_name'] ?? 'Não disponível';
 
-        // Componentes individuais
         final rua =
             addressComponents['road'] ??
             addressComponents['pedestrian'] ??
@@ -109,7 +100,6 @@ class LocationService {
         };
       }
 
-      // Retornar valores padrão em caso de erro
       return {
         'endereco': 'Não disponível',
         'rua': 'Não disponível',
@@ -117,8 +107,10 @@ class LocationService {
         'cidade': 'Não disponível',
       };
     } catch (e) {
-      print('Erro ao obter endereço: $e');
-      // Em caso de erro, retornar valores padrão
+      if (kDebugMode) {
+        print('Erro ao obter endereço: $e');
+      }
+
       return {
         'endereco': 'Não disponível',
         'rua': 'Não disponível',
@@ -128,6 +120,7 @@ class LocationService {
     }
   }
 
+  // Obtém endereço pelo geocoding
   Future<Map<String, String>> _getAddressFromGeocoding(
     double latitude,
     double longitude,
@@ -151,11 +144,11 @@ class LocationService {
         };
       }
     } catch (e) {
-      print('Erro ao obter endereço local: $e');
+      if (kDebugMode) {
+        print('Erro ao obter endereço local: $e');
+      }
     }
 
     throw Exception('Não foi possível obter o endereço');
   }
-
-  // Função para analisar uma coordenada GPS de uma string
 }

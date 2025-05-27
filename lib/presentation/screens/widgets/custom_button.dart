@@ -24,7 +24,6 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final buttonColor = cor ?? Theme.of(context).primaryColor;
 
-    // Em vez de SizedBox, usamos um widget que lida melhor com restrições
     Widget button =
         outlined
             ? OutlinedButton(
@@ -51,21 +50,16 @@ class CustomButton extends StatelessWidget {
               child: _buildButtonContent(Colors.white),
             );
 
-    // Somente aplicamos largura total se solicitado
     if (fullWidth) {
-      return SizedBox(
-        width: double.maxFinite, // Usar maxFinite em vez de infinity
-        child: button,
-      );
+      return SizedBox(width: double.maxFinite, child: button);
     } else {
-      return button; // Retorna o botão diretamente sem restrições de largura
+      return button;
     }
   }
 
   Widget _buildButtonContent(Color textColor) {
     return Row(
-      mainAxisSize:
-          MainAxisSize.min, // Importante para evitar expansão infinita
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (icone != null) ...[
@@ -73,7 +67,6 @@ class CustomButton extends StatelessWidget {
           SizedBox(width: 8.0),
         ],
         Flexible(
-          // Adicionamos Flexible para permitir que o texto quebre se necessário
           child: Text(
             texto,
             style: TextStyle(

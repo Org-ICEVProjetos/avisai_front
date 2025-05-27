@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -21,7 +22,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       titleHighlight: 'Avisaí',
       titleEnd: '',
       description: 'Ajude a transformar sua cidade com poucos toques na tela.',
-      customTitle: true, // <- "Avis" e "aí" com cores diferentes
+      customTitle: true,
     ),
     OnboardingPageData(
       image: 'assets/images/onboarding_report.png',
@@ -30,7 +31,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       titleEnd: '',
       description:
           'Tire uma foto, selecione o tipo de irregularidade e toque em "Enviar". A prefeitura será notificada',
-      customDescription: true, // <- Colorir "prefeitura"
+      customDescription: true,
     ),
     OnboardingPageData(
       image: 'assets/images/onboarding_city.png',
@@ -39,7 +40,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       titleEnd: ' com você',
       description:
           'Cada registro ajuda a construir uma cidade mais segura, limpa e bem cuidada. Sua participação faz a diferença!',
-      customDescription: true, // <- Colorir "segura", "limpa", "bem cuidada"
+      customDescription: true,
     ),
   ];
 
@@ -56,7 +57,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      // Verificar permissões antes de ir para a Home
       _verificarPermissoes();
     }
   }
@@ -67,19 +67,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _verificarPermissoes() async {
-    // Verificar status atual das permissões SEM solicitar
     final cameraStatus = await Permission.camera.isGranted;
     final locationStatus = await Permission.location.isGranted;
     final locationWhenInUseStatus =
         await Permission.locationWhenInUse.isGranted;
 
-    // Se alguma permissão ainda não foi concedida, mostrar diálogo explicativo
     if (!cameraStatus || !locationStatus || !locationWhenInUseStatus) {
       if (mounted) {
         _mostrarDialogoPermissoes();
       }
     } else {
-      // Todas as permissões já estão concedidas, ir direto para Home
       _navegarParaHome();
     }
   }
@@ -89,36 +86,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        // Get screen size
         final Size screenSize = MediaQuery.of(context).size;
         final double screenWidth = screenSize.width;
         final double screenHeight = screenSize.height;
 
-        // Calculate responsive sizes
-        final double iconSize = screenWidth * 0.12; // 12% of screen width
-        final double titleFontSize = screenWidth * 0.05; // 5% of screen width
-        final double bodyFontSize = screenWidth * 0.04; // 4% of screen width
-        final double buttonHeight = screenHeight * 0.06; // 6% of screen height
+        final double iconSize = screenWidth * 0.12;
+        final double titleFontSize = screenWidth * 0.05;
+        final double bodyFontSize = screenWidth * 0.04;
+        final double buttonHeight = screenHeight * 0.06;
 
         return PopScope(
           canPop: false,
           child: AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                screenWidth * 0.04,
-              ), // Responsive border radius
+              borderRadius: BorderRadius.circular(screenWidth * 0.04),
             ),
             contentPadding: EdgeInsets.fromLTRB(
-              screenWidth * 0.06, // Left padding
-              screenHeight * 0.03, // Top padding
-              screenWidth * 0.06, // Right padding
-              0, // Bottom padding
+              screenWidth * 0.06,
+              screenHeight * 0.03,
+              screenWidth * 0.06,
+              0,
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Ícone da pasta
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -135,8 +127,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ],
                 ),
 
-                SizedBox(height: screenHeight * 0.02), // Responsive spacing
-                // Corpo do texto
+                SizedBox(height: screenHeight * 0.02),
+
                 Text.rich(
                   TextSpan(
                     style: TextStyle(
@@ -169,39 +161,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   textAlign: TextAlign.justify,
                 ),
-                SizedBox(height: screenHeight * 0.03), // Responsive spacing
+                SizedBox(height: screenHeight * 0.03),
               ],
             ),
             actionsPadding: EdgeInsets.fromLTRB(
-              screenWidth * 0.06, // Left padding
-              0, // Top padding
-              screenWidth * 0.06, // Right padding
-              screenHeight * 0.03, // Bottom padding
+              screenWidth * 0.06,
+              0,
+              screenWidth * 0.06,
+              screenHeight * 0.03,
             ),
             actions: [
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  // Delay para abrir a solicitação de permissões
+
                   Future.delayed(const Duration(milliseconds: 100), () {
                     if (mounted) {
                       _solicitarPermissoes();
                     }
-                    // Marcar que o tutorial já foi mostrado
+
                     _salvarTutorialMostrado();
                   });
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF022865),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      screenWidth * 0.08,
-                    ), // Responsive border radius
+                    borderRadius: BorderRadius.circular(screenWidth * 0.08),
                   ),
-                  minimumSize: Size(
-                    double.infinity,
-                    buttonHeight, // Responsive button height
-                  ),
+                  minimumSize: Size(double.infinity, buttonHeight),
                 ),
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
@@ -210,7 +197,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Inter',
-                      fontSize: bodyFontSize, // Responsive text size for button
+                      fontSize: bodyFontSize,
                     ),
                   ),
                 ),
@@ -224,7 +211,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _solicitarPermissoes() async {
     try {
-      // Solicitar permissões com timeout para evitar travamentos
       await Permission.camera.request().timeout(
         Duration(seconds: 5),
         onTimeout: () => PermissionStatus.denied,
@@ -240,13 +226,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       await _verificarPermissoesNegadasPermanentemente();
       _navegarParaHome();
     } catch (e) {
-      print("Erro ao solicitar permissões: $e");
-      if (mounted) _navegarParaHome(); // Garantir navegação mesmo com erro
+      if (kDebugMode) {
+        print("Erro ao solicitar permissões: $e");
+      }
+      if (mounted) _navegarParaHome();
     }
   }
 
   Future<void> _verificarPermissoesNegadasPermanentemente() async {
-    // Verificar se alguma permissão foi negada permanentemente
     bool cameraPermanentlyDenied = await Permission.camera.isPermanentlyDenied;
     bool locationPermanentlyDenied =
         await Permission.location.isPermanentlyDenied;
@@ -256,31 +243,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         showDialog(
           context: context,
           builder: (BuildContext context) {
-            // Get screen size
             final Size screenSize = MediaQuery.of(context).size;
             final double screenWidth = screenSize.width;
             final double screenHeight = screenSize.height;
 
-            // Calculate responsive sizes
-            // 12% of screen width
-            final double titleFontSize =
-                screenWidth * 0.05; // 5% of screen width
-            final double bodyFontSize =
-                screenWidth * 0.04; // 4% of screen width
-            final double buttonHeight =
-                screenHeight * 0.06; // 6% of screen height
+            final double titleFontSize = screenWidth * 0.05;
+            final double bodyFontSize = screenWidth * 0.04;
+            final double buttonHeight = screenHeight * 0.06;
 
             return AlertDialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  screenWidth * 0.04,
-                ), // Responsive border radius
+                borderRadius: BorderRadius.circular(screenWidth * 0.04),
               ),
               contentPadding: EdgeInsets.fromLTRB(
-                screenWidth * 0.06, // Left padding
-                screenHeight * 0.03, // Top padding
-                screenWidth * 0.06, // Right padding
-                screenHeight * 0.02, // Bottom padding
+                screenWidth * 0.06,
+                screenHeight * 0.03,
+                screenWidth * 0.06,
+                screenHeight * 0.02,
               ),
               title: Text(
                 'Permissões necessárias',
@@ -306,17 +285,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 textAlign: TextAlign.justify,
               ),
               actionsPadding: EdgeInsets.fromLTRB(
-                screenWidth * 0.06, // Left padding
-                0, // Top padding
-                screenWidth * 0.06, // Right padding
-                screenHeight * 0.03, // Bottom padding
+                screenWidth * 0.06,
+                0,
+                screenWidth * 0.06,
+                screenHeight * 0.03,
               ),
               actions: [
-                // Layout de coluna para os botões ocuparem toda a largura
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Botão principal "Abrir configurações"
                     ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pop();
@@ -346,10 +323,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ),
 
-                    SizedBox(
-                      height: screenHeight * 0.01,
-                    ), // Espaçamento entre botões
-                    // Botão secundário "Cancelar"
+                    SizedBox(height: screenHeight * 0.01),
+
                     TextButton(
                       onPressed: () {
                         Navigator.of(context).pop();
@@ -357,11 +332,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       },
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.grey[700],
-                        minimumSize: Size(
-                          double.infinity,
-                          buttonHeight *
-                              0.8, // Ligeiramente menor que o botão principal
-                        ),
+                        minimumSize: Size(double.infinity, buttonHeight * 0.8),
                       ),
                       child: Text(
                         'Cancelar',
@@ -378,7 +349,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             );
           },
         );
-        // O método _navegarParaHome será chamado nos botões do diálogo
         return;
       }
     }
@@ -435,13 +405,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-            // Bottom navigation area with page dots on left, arrows on right
+
             Container(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Page indicators on left
                   Row(
                     children: List.generate(
                       _pages.length,
@@ -449,10 +418,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ),
 
-                  // Navigation buttons together on right
                   Row(
                     children: [
-                      // Back button (only visible after first page)
                       _currentPage > 0
                           ? Container(
                             width: 60,
@@ -478,7 +445,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           )
                           : const SizedBox.shrink(),
 
-                      // Next/Finish button
                       Container(
                         width: 60,
                         height: 60,
@@ -518,7 +484,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-// Dados para cada página do onboarding
 class OnboardingPageData {
   final String image;
   final String title;
@@ -534,8 +499,8 @@ class OnboardingPageData {
     required this.titleHighlight,
     required this.titleEnd,
     required this.description,
-    this.customTitle = false, // << Novo
-    this.customDescription = false, // << Novo
+    this.customTitle = false,
+    this.customDescription = false,
   });
 }
 
@@ -650,7 +615,6 @@ class OnboardingPage extends StatelessWidget {
 
   Widget _buildCustomDescription(BuildContext context) {
     if (data.description.contains('prefeitura')) {
-      // Segunda página
       final parts = data.description.split('prefeitura');
       return RichText(
         text: TextSpan(
@@ -674,7 +638,6 @@ class OnboardingPage extends StatelessWidget {
         ),
       );
     } else {
-      // Terceira página
       return RichText(
         text: TextSpan(
           style: const TextStyle(

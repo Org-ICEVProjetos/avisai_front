@@ -39,19 +39,14 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
   CategoriaIrregularidade _categoriaIrregularidade =
       CategoriaIrregularidade.buraco;
   Position? _localizacaoCaptura;
-  // Adicione esta variável ao estado da sua classe
   bool _flashAtivado = false;
   final TextEditingController _observationController = TextEditingController();
-
-  // Controlador de animação
   late AnimationController _buttonAnimationController;
   late Animation<double> _buttonScaleAnimation;
 
   @override
   void initState() {
     super.initState();
-
-    // Inicializar controlador de animação
     _buttonAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -64,7 +59,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       ),
     );
 
-    // Inicializa a câmera após um pequeno delay para garantir que o widget está montado
     Future.delayed(Duration(milliseconds: 300), () {
       if (mounted) {
         _inicializarCamera();
@@ -75,7 +69,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
   @override
   void dispose() {
     _buttonAnimationController.dispose();
-    _observationController.dispose(); // NOVO
+    _observationController.dispose();
 
     try {
       if (_cameraController != null) {
@@ -83,7 +77,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         _cameraController = null;
       }
     } catch (e) {
-      print("Erro ao liberar câmera no dispose: $e");
+      if (kDebugMode) {
+        print("Erro ao liberar câmera no dispose: $e");
+      }
     }
     _liberarCamera();
     super.dispose();
@@ -93,16 +89,13 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
   void didUpdateWidget(NovoRegistroScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Se a visibilidade mudou
     if (oldWidget.isVisible != widget.isVisible) {
       if (widget.isVisible) {
-        // Inicializar câmera quando a tela ficar visível
         if (_cameraController == null ||
             !_cameraController!.value.isInitialized) {
           _inicializarCamera();
         }
       } else {
-        // Liberar câmera quando a tela ficar invisível
         _liberarCamera();
       }
     }
@@ -113,9 +106,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       if (_cameraController != null) {
         final wasInitialized = _cameraController!.value.isInitialized;
         await _cameraController!.dispose();
-
-        // Atualizar o estado imediatamente para evitar que a interface tente acessar
-        // um controlador descartado
         if (mounted && wasInitialized) {
           setState(() {
             _cameraController = null;
@@ -125,8 +115,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         }
       }
     } catch (e) {
-      print("Erro ao liberar câmera: $e");
-      // Garantir que o controlador seja nulo mesmo em caso de erro
+      if (kDebugMode) {
+        print("Erro ao liberar câmera: $e");
+      }
       if (mounted) {
         setState(() {
           _cameraController = null;
@@ -145,14 +136,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
     });
 
     try {
-      // Verificar permissões
-      if (kDebugMode) {
-        print('Verificando permissões da câmera...');
-      }
       final statusCamera = await Permission.camera.status;
-      if (kDebugMode) {
-        print('Status da permissão de câmera: $statusCamera');
-      }
 
       if (statusCamera.isDenied) {
         await Permission.camera.request();
@@ -165,14 +149,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         return;
       }
 
-      // Tentar obter as câmeras disponíveis
-      if (kDebugMode) {
-        print('Buscando câmeras disponíveis...');
-      }
       _cameras = await availableCameras();
-      if (kDebugMode) {
-        print('Câmeras encontradas: ${_cameras?.length ?? 0}');
-      }
 
       if (_cameras == null || _cameras!.isEmpty) {
         setState(() {
@@ -183,10 +160,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         return;
       }
 
-      // Inicializar o controlador com a primeira câmera disponível
-      if (kDebugMode) {
-        print('Inicializando controlador de câmera...');
-      }
       _cameraController = CameraController(
         _cameras![0],
         ResolutionPreset.veryHigh,
@@ -194,14 +167,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
 
-      // Aguardar a inicialização do controlador
-      if (kDebugMode) {
-        print('Aguardando inicialização do controlador...');
-      }
       await _cameraController!.initialize();
-      if (kDebugMode) {
-        print('Controlador de câmera inicializado com sucesso!');
-      }
 
       if (!mounted) return;
 
@@ -223,14 +189,12 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
     }
   }
 
-  // Adicione este método à sua classe para alternar o estado do flash
   Future<void> _alternarFlash() async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
     }
 
     try {
-      // Alternar entre os modos de flash disponíveis
       if (_flashAtivado) {
         await _cameraController!.setFlashMode(FlashMode.off);
       } else {
@@ -264,7 +228,10 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
 
     final position = await Geolocator.getCurrentPosition(
       locationSettings: AndroidSettings(
-        accuracy: LocationAccuracy.best,
+        accuracy:
+            isOnline
+                ? LocationAccuracy.bestForNavigation
+                : LocationAccuracy.best,
         forceLocationManager: !isOnline,
       ),
     );
@@ -285,20 +252,13 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
     }
 
     try {
-      // Mostrar indicador de carregamento
       setState(() {
         _inicializando = true;
       });
 
-      // Capturar a foto
       final arquivo = await _cameraController!.takePicture();
 
-      // Capturar a localização atual
       final position = await obterLocalizacaoComBaseNaConexao(context);
-
-      if (kDebugMode) {
-        print("AQUII: ${position.latitude}, ${position.longitude}");
-      }
 
       setState(() {
         _imagemCapturada = File(arquivo.path);
@@ -399,19 +359,15 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       return;
     }
 
-    // Mostra indicador de progresso
     setState(() {
       _inicializando = true;
     });
 
-    // IMPORTANTE: Libere os recursos da câmera antes de navegar
-    await _liberarCamera(); // Alterado para usar o método existente
+    await _liberarCamera();
 
     try {
-      // Armazene o caminho da imagem capturada
       final String caminhoImagem = _imagemCapturada!.path;
 
-      // Crie o registro usando o BLoC, mas passando as coordenadas salvas
       context.read<RegistroBloc>().add(
         CriarNovoRegistroComLocalizacao(
           usuarioId: widget.usuarioId,
@@ -430,8 +386,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen(index: 0)),
       );
-
-      // Navegue para a tela principal e libere recursos explicitamente
     } catch (e) {
       if (kDebugMode) {
         print("Erro durante o envio do registro: $e");
@@ -457,7 +411,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
     return BlocListener<RegistroBloc, RegistroState>(
       listener: (context, state) {
         if (state is RegistroOperacaoSucesso) {
-          // Mostra mensagem de sucesso
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.mensagem),
@@ -465,21 +418,11 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
               backgroundColor: Colors.green,
             ),
           );
-        } else if (state is RegistroErro) {
-          // // Mostra erro mas não fecha a tela
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //   const SnackBar(
-          //     content: Text("Erro na API, mas registro salvo localmente"),
-          //     duration: Duration(seconds: 1),
-          //     backgroundColor: Colors.orange,
-          //   ),
-          // );
-        }
+        } else if (state is RegistroErro) {}
       },
       child: Scaffold(
         body: Column(
           children: [
-            // Status de conectividade no topo
             BlocBuilder<ConnectivityBloc, ConnectivityState>(
               builder: (context, state) {
                 if (state is ConnectivityDisconnected) {
@@ -510,7 +453,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
               },
             ),
 
-            // Área da câmera ou imagem (expandida para ocupar o espaço disponível)
             Expanded(
               child:
                   _inicializando
@@ -521,14 +463,11 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
             ),
           ],
         ),
-
-        // Bottom Navigation Bar fixa
       ),
     );
   }
 
   Widget _mostrarCamera() {
-    // Se houve erro na inicialização da câmera
     if (_erroCamera) {
       return Center(
         child: Column(
@@ -552,7 +491,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       );
     }
 
-    // Verificações para câmera
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return Center(
         child: Text(
@@ -563,15 +501,12 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       );
     }
 
-    // Tenta mostrar o preview da câmera
     try {
       return Stack(
         fit: StackFit.expand,
         children: [
-          // Preview da câmera
           CameraPreview(_cameraController!),
 
-          // Botão de captura circular na parte inferior
           Positioned(
             bottom: 32,
             left: 0,
@@ -617,7 +552,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
             ),
           ),
 
-          // Botão de galeria no canto inferior direito
           // Positioned(
           //   bottom: 40,
           //   right: 24,
@@ -645,11 +579,8 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
                 decoration: BoxDecoration(
                   color:
                       _flashAtivado
-                          ? Colors
-                              .amber // Cor quando ligado
-                          : Colors.black.withOpacity(
-                            0.6,
-                          ), // Cor quando desligado
+                          ? Colors.amber
+                          : Colors.black.withOpacity(0.6),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -689,14 +620,12 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
   Widget _visualizarImagemCapturada() {
     return Stack(
       children: [
-        // Fundo escurecido
         Container(
           color: Colors.black.withOpacity(0.7),
           width: double.infinity,
           height: double.infinity,
         ),
 
-        // Card central com a imagem e opções
         Center(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -715,7 +644,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Imagem capturada com bordas arredondadas
                 Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: ClipRRect(
@@ -785,7 +713,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
                     ),
                   ),
                 ),
-                // Seletor de categoria
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   child: Column(
@@ -798,8 +725,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
                         shadowColor: Colors.black.withOpacity(0.4),
                         color: Colors.white,
                         child: DropdownButtonFormField<CategoriaIrregularidade>(
-                          value:
-                              _categoriaIrregularidade, // Deve ser null inicialmente
+                          value: _categoriaIrregularidade,
                           decoration: InputDecoration(
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -873,7 +799,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
                         ),
                       ),
 
-                      // NOVO: Campo de observação
                       const SizedBox(height: 16),
                       Material(
                         elevation: 5,
@@ -907,7 +832,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
                   ),
                 ),
 
-                // Texto de confirmação
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -922,12 +846,10 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
                   ),
                 ),
 
-                // Botões de ação
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: Row(
                     children: [
-                      // Botão Cancelar
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: _cancelar,
@@ -948,7 +870,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
                         ),
                       ),
                       SizedBox(width: 12),
-                      // Botão Enviar
+
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: _enviarRegistro,

@@ -1,9 +1,10 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:async';
 import 'package:avisai4/bloc/connectivity/connectivity_bloc.dart';
+import 'package:avisai4/config/api_config.dart';
 import 'package:avisai4/services/location_service.dart';
-import 'package:avisai4/services/user_storage.dart';
+import 'package:avisai4/services/user_storage_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -12,8 +13,6 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../../bloc/registro/registro_bloc.dart';
 import '../../../data/models/registro.dart';
-
-import 'detalhes_registro_screen.dart';
 
 class MapaIrregularidadesScreen extends StatefulWidget {
   const MapaIrregularidadesScreen({super.key});
@@ -30,26 +29,18 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
   bool _mapControllerReady = false;
 
   List<Marker> _markers = [];
-  LatLng _posicaoInicial = const LatLng(
-    -5.08917,
-    -42.80194,
-  ); // Posição padrão: Brasília
+  LatLng _posicaoInicial = const LatLng(-5.08917, -42.80194);
   CategoriaIrregularidade? _filtroCategoria;
   double _zoomAtual = 15.0;
-
-  // Localização atual e streams
   LatLng? _posicaoAtual;
   StreamSubscription<Position>? _positionStreamSubscription;
-  bool _seguirLocalizacao =
-      false; // Controla se o mapa deve seguir a localização do usuário
+  bool _seguirLocalizacao = false;
 
   @override
   void initState() {
     super.initState();
     _inicializarMapa();
     _iniciarMonitoramentoLocalizacao();
-
-    // Carregar registros quando a tela for inicializada
     context.read<RegistroBloc>().add(CarregarRegistros());
   }
 
@@ -61,7 +52,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
 
   Future<void> _inicializarMapa() async {
     try {
-      // Obter a localização atual
       final posicao = await _locationService.getCurrentLocation();
 
       setState(() {
@@ -70,13 +60,13 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         _seguirLocalizacao = true;
       });
     } catch (e) {
-      print('Erro ao obter localização: $e');
-      // Continuamos com a posição padrão definida na inicialização
+      if (kDebugMode) {
+        print('Erro ao obter localização: $e');
+      }
     }
   }
 
   void _iniciarMonitoramentoLocalizacao() async {
-    // Verificar e solicitar permissões
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -97,18 +87,16 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
       return;
     }
 
-    // Iniciar stream de posição
     _positionStreamSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 5, // Atualiza a cada 5 metros de movimento
+        distanceFilter: 5,
       ),
     ).listen((Position position) {
       setState(() {
         _posicaoAtual = LatLng(position.latitude, position.longitude);
       });
 
-      // Se modo seguir estiver ativo, mover o mapa junto com a localização
       if (_seguirLocalizacao && _mapControllerReady) {
         _mapController.move(_posicaoAtual!, _zoomAtual);
       }
@@ -119,7 +107,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
     if (!_mapControllerReady || _posicaoAtual == null) return;
 
     setState(() {
-      _seguirLocalizacao = true; // Ativar modo de seguir localização
+      _seguirLocalizacao = true;
     });
 
     _mapController.move(_posicaoAtual!, _zoomAtual);
@@ -139,14 +127,10 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
     final state = context.read<RegistroBloc>().state;
 
     if (state is RegistroCarregado) {
-      // Obter ID do usuário logado
       final usuario = await UserLocalStorage.obterUsuario();
       final usuarioId = usuario?.id;
-
-      // Filtrar registros por categoria e/ou usuário
       List<Registro> registros = state.registros;
 
-      // Filtrar por categoria se filtro estiver ativo
       if (_filtroCategoria != null) {
         registros =
             registros.where((r) => r.categoria == _filtroCategoria).toList();
@@ -179,14 +163,12 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
             }).toList();
       });
 
-      // Ajustar a visualização para mostrar todos os marcadores, se houver algum
       if (_markers.isNotEmpty && _mapControllerReady && !_seguirLocalizacao) {
         _ajustarVisualizacao(registros);
       }
     }
   }
 
-  // Funções auxiliares para ícones e cores
   IconData _getCategoriaIcone(CategoriaIrregularidade categoria) {
     switch (categoria) {
       case CategoriaIrregularidade.buraco:
@@ -239,24 +221,21 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
               borderRadius: BorderRadius.circular(16),
             ),
             contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-            title:
-                null, // Removendo o título padrão para personalizar dentro do content
+            title: null,
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Ícone e título personalizados na mesma linha
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    // Ícone baseado na categoria
                     Icon(
                       _getCategoriaIcone(registro.categoria),
                       color: const Color(0xFF022865),
                       size: 36,
                     ),
                     const SizedBox(width: 16),
-                    // Título com o nome da categoria
+
                     Expanded(
                       child: Text(
                         _getCategoriaTexto(registro.categoria),
@@ -273,7 +252,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
 
                 const SizedBox(height: 16),
 
-                // Endereço com ícone
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -299,7 +277,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
 
                 const SizedBox(height: 12),
 
-                // Status com ícone e cor apropriada
                 Row(
                   children: [
                     Icon(
@@ -325,20 +302,15 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
             ),
             actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             actions: [
-              // Botões em layout de coluna para ocupar a largura total
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Botão principal "Ver detalhes"
                   ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  DetalheRegistroScreen(registro: registro),
-                        ),
+                      Navigator.of(context).pushNamed(
+                        '/registro/detalhe',
+                        arguments: {'registro': registro},
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -360,7 +332,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
 
                   const SizedBox(height: 8),
 
-                  // Botão secundário "Fechar"
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).pop();
@@ -398,7 +369,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
   Future<void> _ajustarVisualizacao(List<Registro> registros) async {
     if (registros.isEmpty || !_mapControllerReady) return;
 
-    // Se houver apenas um registro, centralizar nele
     if (registros.length == 1) {
       _mapController.move(
         LatLng(registros.first.latitude, registros.first.longitude),
@@ -407,7 +377,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
       return;
     }
 
-    // Calcular os limites que contêm todos os marcadores
     double minLat = registros.first.latitude;
     double maxLat = registros.first.latitude;
     double minLng = registros.first.longitude;
@@ -420,22 +389,18 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
       if (registro.longitude > maxLng) maxLng = registro.longitude;
     }
 
-    // Adicionar margem
     minLat -= 0.01;
     maxLat += 0.01;
     minLng -= 0.01;
     maxLng += 0.01;
 
-    // Calcular o centro
     final centerLat = (minLat + maxLat) / 2;
     final centerLng = (minLng + maxLng) / 2;
 
-    // Calcular zoom baseado na distância
     final latDiff = (maxLat - minLat).abs();
     final lngDiff = (maxLng - minLng).abs();
     final maxDiff = latDiff > lngDiff ? latDiff : lngDiff;
 
-    // Ajustar zoom com base na diferença máxima
     double zoom = 15.0;
     if (maxDiff > 0.5) {
       zoom = 8.0;
@@ -451,7 +416,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
     _mapController.move(LatLng(centerLat, centerLng), zoom);
     setState(() {
       _zoomAtual = zoom;
-      _seguirLocalizacao = false; // Desativar modo de seguir localização
+      _seguirLocalizacao = false;
     });
   }
 
@@ -487,7 +452,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
       body: BlocConsumer<RegistroBloc, RegistroState>(
         listener: (context, state) {
           if (state is RegistroCarregado) {
-            // Atualizamos os marcadores após o próximo frame para garantir que o mapa esteja pronto
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _atualizarMarcadores();
             });
@@ -496,7 +460,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
         builder: (context, state) {
           return Stack(
             children: [
-              // Mapa
               FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
@@ -516,24 +479,21 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                     if (hasGesture) {
                       setState(() {
                         _zoomAtual = position.zoom;
-                        _seguirLocalizacao =
-                            false; // Desativar seguir localização quando o usuário move o mapa
+                        _seguirLocalizacao = false;
                       });
                     }
                   },
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate: ApiConfig.openStreetApi,
                     userAgentPackageName: 'com.avisai.app',
                     subdomains: const ['a', 'b', 'c'],
                     maxZoom: 19,
                   ),
-                  // Camada de marcadores para registros
+
                   MarkerLayer(markers: _markers),
 
-                  // Camada de marcador para localização atual
                   if (_posicaoAtual != null)
                     MarkerLayer(
                       markers: [
@@ -576,7 +536,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                 ],
               ),
 
-              // Barra superior com filtros
               Positioned(
                 top: MediaQuery.of(context).padding.top + 50,
                 left: 16,
@@ -594,8 +553,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                           child: DropdownButtonFormField<
                             CategoriaIrregularidade
                           >(
-                            value:
-                                _filtroCategoria, // precisa estar null inicialmente para mostrar o hint
+                            value: _filtroCategoria,
                             decoration: InputDecoration(
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -605,9 +563,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                                 vertical: 8,
                               ),
                             ),
-                            hint: const Text(
-                              'Filtrar por categoria',
-                            ), // Mostra quando value for null
+                            hint: const Text('Filtrar por categoria'),
                             items: const [
                               DropdownMenuItem<CategoriaIrregularidade>(
                                 value: null,
@@ -640,7 +596,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                 ),
               ),
 
-              // Botões de ação
               Positioned(
                 bottom: 16,
                 right: 16,
@@ -672,7 +627,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                 ),
               ),
 
-              // Controles de zoom
               Positioned(
                 bottom: 16,
                 right: 80,
@@ -718,7 +672,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                 ),
               ),
 
-              // Contagem de registros
               Positioned(
                 bottom: 16,
                 left: 16,
@@ -770,7 +723,6 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                 ),
               ),
 
-              // Carregando indicador
               if (state is RegistroCarregando)
                 const Center(child: CircularProgressIndicator()),
 
@@ -781,7 +733,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-              // Barra de status de conectividade
+
               Positioned(
                 top: MediaQuery.of(context).padding.top,
                 left: 0,

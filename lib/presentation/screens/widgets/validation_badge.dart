@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/registro.dart'; // Importando o arquivo onde está o enum StatusValidacao
+import '../../../data/models/registro.dart';
 
 class ValidationBadge extends StatelessWidget {
   final StatusValidacao status;
@@ -8,7 +8,6 @@ class ValidationBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Definir configurações de acordo com o status
     IconData icon;
     String texto;
     Color cor;

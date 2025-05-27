@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:io';
 
 import 'package:avisai4/data/models/registro.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +10,7 @@ class RegistroCard extends StatelessWidget {
   final String endereco;
   final String data;
   final String imagemUrl;
-  final StatusValidacao status; // Modificado de bool para StatusValidacao
+  final StatusValidacao status;
   final bool sincronizado;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
@@ -21,7 +21,7 @@ class RegistroCard extends StatelessWidget {
     required this.endereco,
     required this.data,
     required this.imagemUrl,
-    this.status = StatusValidacao.naoValidado, // Valor padrão modificado
+    this.status = StatusValidacao.naoValidado,
     this.sincronizado = true,
     this.onTap,
     this.onDelete,
@@ -39,16 +39,13 @@ class RegistroCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Imagem
             SizedBox(
               height: 150.0,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Imagem principal
-                  _buildImageFromBase64(imagemUrl),
+                  _buildImageFromURI(imagemUrl),
 
-                  // Badges de status
                   Positioned(
                     top: 8.0,
                     right: 8.0,
@@ -95,13 +92,11 @@ class RegistroCard extends StatelessWidget {
               ),
             ),
 
-            // Informações
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Categoria
                   Text(
                     categoria,
                     style: const TextStyle(
@@ -111,7 +106,6 @@ class RegistroCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4.0),
 
-                  // Endereço
                   Row(
                     children: [
                       Icon(
@@ -135,7 +129,6 @@ class RegistroCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4.0),
 
-                  // Data
                   Row(
                     children: [
                       Icon(
@@ -157,7 +150,6 @@ class RegistroCard extends StatelessWidget {
               ),
             ),
 
-            // Ações
             if (onDelete != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(8.0, 0.0, 8.0, 8.0),
@@ -177,15 +169,14 @@ class RegistroCard extends StatelessWidget {
     );
   }
 
-  // Adicionar este método à classe
-  Widget _buildImageFromBase64(String base64String) {
+  Widget _buildImageFromURI(String uriString) {
     try {
-      if (base64String.isEmpty) {
+      if (uriString.isEmpty) {
         return _buildImagePlaceholder();
       }
 
-      return Image.memory(
-        base64Decode(base64String),
+      return Image.file(
+        File(uriString),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           return _buildImagePlaceholder();

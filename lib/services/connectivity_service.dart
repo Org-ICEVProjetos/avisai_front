@@ -1,6 +1,8 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 class ConnectivityService {
   static final ConnectivityService _instance = ConnectivityService._internal();
   factory ConnectivityService() => _instance;
@@ -14,16 +16,15 @@ class ConnectivityService {
   bool _isOnline = false;
   bool get isOnline => _isOnline;
 
+  //Inicializa serviço de conexão
   void initialize() {
-    // Verificar estado inicial da conexão
     _checkConnectivity();
-
-    // Ouvir mudanças na conectividade
     _connectivity.onConnectivityChanged.listen((result) {
       _updateConnectionStatus(result);
     });
   }
 
+  // Checa qual a coenxão atual
   Future<void> _checkConnectivity() async {
     try {
       List<ConnectivityResult> results =
@@ -35,16 +36,19 @@ class ConnectivityService {
         _isOnline = false;
       }
     } catch (e) {
-      print('Erro ao verificar conectividade: $e');
+      if (kDebugMode) {
+        print('Erro ao verificar conectividade: $e');
+      }
       _connectionStatusController.add(false);
       _isOnline = false;
     }
   }
 
+  // Atualiza status de conexão atual
   void _updateConnectionStatus(List<ConnectivityResult> results) {
-    // Consideramos online se qualquer um dos resultados for diferente de "none"
-    bool isConnected =
-        results.any((result) => result != ConnectivityResult.none);
+    bool isConnected = results.any(
+      (result) => result != ConnectivityResult.none,
+    );
     _connectionStatusController.add(isConnected);
     _isOnline = isConnected;
   }

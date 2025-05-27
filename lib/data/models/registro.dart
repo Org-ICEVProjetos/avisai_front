@@ -14,8 +14,8 @@ class Registro {
   final String? rua;
   final String? bairro;
   final String? cidade;
-  final String base64Foto;
-  final String? observation; // NOVO CAMPO
+  final String photoPath;
+  final String? observation;
   final StatusValidacao status;
   final bool sincronizado;
   final String? validadoPorUsuarioId;
@@ -33,8 +33,8 @@ class Registro {
     this.rua,
     this.bairro,
     this.cidade,
-    required this.base64Foto,
-    this.observation, // NOVO PARÂMETRO
+    required this.photoPath,
+    this.observation,
     this.status = StatusValidacao.pendente,
     this.sincronizado = false,
     this.validadoPorUsuarioId,
@@ -53,8 +53,8 @@ class Registro {
     String? rua,
     String? bairro,
     String? cidade,
-    String? base64Foto,
-    String? observation, // NOVO
+    String? photoPath,
+    String? observation,
     StatusValidacao? status,
     bool? sincronizado,
     String? validadoPorUsuarioId,
@@ -72,8 +72,8 @@ class Registro {
       rua: rua ?? this.rua,
       bairro: bairro ?? this.bairro,
       cidade: cidade ?? this.cidade,
-      base64Foto: base64Foto ?? this.base64Foto,
-      observation: observation ?? this.observation, // NOVO
+      photoPath: photoPath ?? this.photoPath,
+      observation: observation ?? this.observation,
       status: status ?? this.status,
       sincronizado: sincronizado ?? this.sincronizado,
       validadoPorUsuarioId: validadoPorUsuarioId ?? this.validadoPorUsuarioId,
@@ -94,8 +94,8 @@ class Registro {
       'rua': rua,
       'bairro': bairro,
       'cidade': cidade,
-      'base64Foto': base64Foto,
-      'observation': observation, // NOVO
+      'photoPath': photoPath,
+      'observation': observation,
       'status': _stringFromSatus(status),
       'sincronizado': sincronizado ? 1 : 0,
       'validadoPorUsuarioId': validadoPorUsuarioId,
@@ -114,8 +114,8 @@ class Registro {
       'street': rua,
       'neighborhood': bairro,
       'city': cidade,
-      'photoPath': base64Foto,
-      'observation': observation, // NOVO
+      'photoPath': photoPath,
+      'observation': observation,
       'status': _stringFromSatus(status),
       'synchronizedStatus': sincronizado ? 1 : 0,
       'validatedByUserId': validadoPorUsuarioId,
@@ -143,9 +143,9 @@ class Registro {
         isApiJson ? (json['neighborhood'] ?? '') : (json['bairro'] ?? '');
     final String cidade =
         isApiJson ? (json['city'] ?? '') : (json['cidade'] ?? '');
-    final String base64Foto =
-        isApiJson ? (json['photoPath'] ?? '') : (json['base64Foto'] ?? '');
-    final String? observation = json['observation']; // NOVO
+    final String photoPath =
+        isApiJson ? (json['photoPath'] ?? '') : (json['photoPath'] ?? '');
+    final String? observation = json['observation'];
 
     return Registro(
       id: id,
@@ -159,8 +159,8 @@ class Registro {
       rua: _normalizarTexto(rua),
       bairro: _normalizarTexto(bairro),
       cidade: _normalizarTexto(cidade),
-      base64Foto: base64Foto,
-      observation: _normalizarTexto(observation), // NOVO
+      photoPath: photoPath,
+      observation: _normalizarTexto(observation),
       status: _statusFromString(json['status'] ?? 'PENDENTE_VALIDACAO'),
       sincronizado: isApiJson ? true : (json['sincronizado'] == 1),
       validadoPorUsuarioId:
@@ -173,7 +173,7 @@ class Registro {
               : null,
     );
   }
-  // Função para normalizar textos com problemas de codificação
+
   static String _normalizarTexto(String? texto) {
     if (texto == null) return '';
 
@@ -223,7 +223,6 @@ class Registro {
         return 'POSTE_DEFEITO';
       case CategoriaIrregularidade.lixoIrregular:
         return 'LIXO_DESCARTADO';
-
       case CategoriaIrregularidade.outro:
         return 'OUTRO';
     }

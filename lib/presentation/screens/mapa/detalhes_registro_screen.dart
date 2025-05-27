@@ -1,4 +1,5 @@
-import 'dart:convert';
+import 'dart:io';
+
 import 'package:avisai4/bloc/connectivity/connectivity_bloc.dart';
 import 'package:avisai4/data/models/registro.dart';
 import 'package:avisai4/presentation/screens/widgets/custom_button.dart';
@@ -66,10 +67,12 @@ class DetalheRegistroScreen extends StatelessWidget {
     double latitude,
     double longitude,
   ) async {
-    final url =
-        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
+    final url = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+    );
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -81,14 +84,13 @@ class DetalheRegistroScreen extends StatelessWidget {
     }
   }
 
-  // No buildImage:
-  Widget _buildImageFromBase64(String base64String) {
+  Widget _buildImageFromURI(String uriString) {
     try {
-      if (base64String.isEmpty) {
+      if (uriString.isEmpty) {
         return _buildImagePlaceholder();
       }
 
-      return Image.memory(base64Decode(base64String), fit: BoxFit.cover);
+      return Image.file(File(uriString), fit: BoxFit.cover);
     } catch (e) {
       return _buildImagePlaceholder();
     }
@@ -110,8 +112,8 @@ class DetalheRegistroScreen extends StatelessWidget {
     );
   }
 
-  void _expandirImagem(BuildContext context, String base64Foto) {
-    if (base64Foto.isEmpty) return;
+  void _expandirImagem(BuildContext context, String photoPath) {
+    if (photoPath.isEmpty) return;
 
     showDialog(
       context: context,
@@ -124,10 +126,7 @@ class DetalheRegistroScreen extends StatelessWidget {
               child: InteractiveViewer(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.memory(
-                    base64Decode(base64Foto),
-                    fit: BoxFit.contain,
-                  ),
+                  child: Image.file(File(photoPath), fit: BoxFit.contain),
                 ),
               ),
             ),
@@ -142,24 +141,22 @@ class DetalheRegistroScreen extends StatelessWidget {
         title: Text(
           "Detalhes",
           style: const TextStyle(
-            fontSize: 34, // Fonte maior
-            fontWeight: FontWeight.bold, // Negrito
+            fontSize: 34,
+            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Inter', // Se quiser manter seu padrão de fontes
+            fontFamily: 'Inter',
           ),
         ),
 
         backgroundColor: const Color(0xFF002569),
         centerTitle: false,
-        elevation: 0, // Sem sombra
-        foregroundColor: Colors.white, // Ícones brancos
-        toolbarHeight: 80, // <- aumenta a altura da AppBar
+        elevation: 0,
+        foregroundColor: Colors.white,
+        toolbarHeight: 80,
       ),
       body: BlocListener<RegistroBloc, RegistroState>(
         listener: (context, state) {
           if (state is RegistroOperacaoSucesso) {
-            // Se a operação for sucesso e estiver relacionada a uma remoção,
-            // voltar para a tela anterior
             if (state.mensagem.contains('removido')) {
               Navigator.of(context).pop();
             }
@@ -198,7 +195,6 @@ class DetalheRegistroScreen extends StatelessWidget {
                   return SizedBox.shrink();
                 },
               ),
-              // Imagem principal
               Hero(
                 tag: 'imagem_${registro.id}',
                 child: Container(
@@ -216,10 +212,8 @@ class DetalheRegistroScreen extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // Imagem
-                      _buildImageFromBase64(registro.base64Foto),
+                      _buildImageFromURI(registro.photoPath),
 
-                      // Status badges
                       Positioned(
                         top: 16,
                         right: 16,
@@ -263,8 +257,7 @@ class DetalheRegistroScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Botão de expandir imagem
-                      if (registro.base64Foto.isNotEmpty)
+                      if (registro.photoPath.isNotEmpty)
                         Positioned(
                           bottom: 12,
                           right: 12,
@@ -281,7 +274,7 @@ class DetalheRegistroScreen extends StatelessWidget {
                               onPressed:
                                   () => _expandirImagem(
                                     context,
-                                    registro.base64Foto,
+                                    registro.photoPath,
                                   ),
                               tooltip: 'Expandir imagem',
                             ),
@@ -292,13 +285,11 @@ class DetalheRegistroScreen extends StatelessWidget {
                 ),
               ),
 
-              // Informações detalhadas
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Categoria
                     Row(
                       children: [
                         Icon(
@@ -320,7 +311,6 @@ class DetalheRegistroScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Status
                     Row(
                       children: [
                         Icon(
@@ -344,7 +334,6 @@ class DetalheRegistroScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Data
                     Row(
                       children: [
                         Icon(
@@ -361,7 +350,6 @@ class DetalheRegistroScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Endereço
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -406,7 +394,6 @@ class DetalheRegistroScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Coordenadas
                     Row(
                       children: [
                         Icon(
@@ -428,9 +415,12 @@ class DetalheRegistroScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    if (registro.observation != null &&
-                        registro.observation!.isNotEmpty) ...[
-                      Row(
+
+                    Visibility(
+                      visible:
+                          registro.observation != null &&
+                          registro.observation!.isNotEmpty,
+                      child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(Icons.notes, color: Colors.grey[700], size: 22),
@@ -470,90 +460,87 @@ class DetalheRegistroScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 16),
 
-                      // Usuário
+                    Row(
+                      children: [
+                        Icon(Icons.person, color: Colors.grey[700], size: 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Registrado por: ${registro.usuarioNome}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+
+                    if (registro.status == StatusValidacao.validado &&
+                        registro.validadoPorUsuarioId != null) ...[
+                      const SizedBox(height: 24),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Informações de validação',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(Icons.person, color: Colors.grey[700], size: 22),
+                          const Icon(
+                            Icons.verified_user,
+                            color: Colors.green,
+                            size: 22,
+                          ),
                           const SizedBox(width: 8),
-                          Text(
-                            'Registrado por: ${registro.usuarioNome}',
-                            style: const TextStyle(fontSize: 16),
+                          Expanded(
+                            child: Text(
+                              'Validado por: ID ${registro.validadoPorUsuarioId}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
                           ),
                         ],
                       ),
-
-                      // Informações de validação
-                      if (registro.status == StatusValidacao.validado &&
-                          registro.validadoPorUsuarioId != null) ...[
-                        const SizedBox(height: 24),
-                        const Divider(),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Informações de validação',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
+                      const SizedBox(height: 8),
+                      if (registro.dataValidacao != null)
                         Row(
                           children: [
-                            const Icon(
-                              Icons.verified_user,
-                              color: Colors.green,
+                            Icon(
+                              Icons.calendar_today,
+                              color: Colors.grey[700],
                               size: 22,
                             ),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Validado por: ID ${registro.validadoPorUsuarioId}',
-                                style: const TextStyle(fontSize: 16),
-                              ),
+                            Text(
+                              'Data de validação: ${_formatarData(registro.dataValidacao!)}',
+                              style: const TextStyle(fontSize: 16),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        if (registro.dataValidacao != null)
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today,
-                                color: Colors.grey[700],
-                                size: 22,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Data de validação: ${_formatarData(registro.dataValidacao!)}',
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ],
-                          ),
-                        const SizedBox(height: 8),
-                        const Divider(),
-                      ],
-
-                      // Botões de ação
-                      const SizedBox(height: 32),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomButton(
-                              texto: 'Ver no Mapa',
-                              icone: Icons.map,
-                              onPressed:
-                                  () => _abrirMapa(
-                                    context,
-                                    registro.latitude,
-                                    registro.longitude,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
+                      const Divider(),
                     ],
+
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomButton(
+                            texto: 'Ver no Mapa',
+                            icone: Icons.map,
+                            onPressed:
+                                () => _abrirMapa(
+                                  context,
+                                  registro.latitude,
+                                  registro.longitude,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),

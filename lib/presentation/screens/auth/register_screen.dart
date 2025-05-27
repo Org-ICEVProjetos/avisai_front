@@ -33,7 +33,6 @@ class _RegisterScreenState extends State<RegisterScreen>
   bool _mostrarConfirmaSenha = false;
   bool _concordaTermos = false;
 
-  // Animation controllers
   late AnimationController _animationController;
   late Animation<double> _fadeInAnimation;
   late Animation<Offset> _slideTitleAnimation;
@@ -50,13 +49,11 @@ class _RegisterScreenState extends State<RegisterScreen>
   void initState() {
     super.initState();
 
-    // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
 
-    // Fade in animation for the whole screen
     _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
@@ -64,7 +61,6 @@ class _RegisterScreenState extends State<RegisterScreen>
       ),
     );
 
-    // Slide animations for each element
     _slideTitleAnimation = Tween<Offset>(
       begin: const Offset(0, 0.5),
       end: Offset.zero,
@@ -85,7 +81,6 @@ class _RegisterScreenState extends State<RegisterScreen>
       ),
     );
 
-    // Form field animations - staggered entries
     _slideForm1Animation = Tween<Offset>(
       begin: const Offset(0, 0.5),
       end: Offset.zero,
@@ -150,7 +145,6 @@ class _RegisterScreenState extends State<RegisterScreen>
       ),
     );
 
-    // Start animation after short delay
     Future.delayed(const Duration(milliseconds: 100), () {
       _animationController.forward();
     });
@@ -221,14 +215,12 @@ class _RegisterScreenState extends State<RegisterScreen>
       return 'Por favor, digite seu CPF';
     }
 
-    // Remover caracteres especiais
     final cpf = valor.replaceAll(RegExp(r'[^\d]'), '');
 
     if (cpf.length != 11) {
       return 'CPF deve ter 11 dígitos';
     }
 
-    // Validação simplificada, em um app real deveria ter validação completa
     return null;
   }
 
@@ -305,7 +297,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       SizedBox(height: 20),
-                      // Título "Cadastro" com animação
+
                       SlideTransition(
                         position: _slideTitleAnimation,
                         child: Text(
@@ -319,7 +311,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                         ),
                       ),
 
-                      // Subtítulo com animação
                       SlideTransition(
                         position: _slideSubtitleAnimation,
                         child: Text(
@@ -335,13 +326,11 @@ class _RegisterScreenState extends State<RegisterScreen>
 
                       const SizedBox(height: 42),
 
-                      // Formulário de cadastro
                       Form(
                         key: _formKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Campo Nome Completo com animação
                             SlideTransition(
                               position: _slideForm1Animation,
                               child: _buildInputField(
@@ -355,7 +344,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                             ),
                             const SizedBox(height: 30),
 
-                            // Campo E-mail com animação
                             SlideTransition(
                               position: _slideForm2Animation,
                               child: _buildInputField(
@@ -369,7 +357,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                             ),
                             const SizedBox(height: 30),
 
-                            // Campo CPF com animação
                             SlideTransition(
                               position: _slideForm3Animation,
                               child: _buildInputField(
@@ -386,7 +373,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                             ),
                             const SizedBox(height: 30),
 
-                            // Campo Senha com animação
                             SlideTransition(
                               position: _slideForm4Animation,
                               child: _buildInputField(
@@ -413,7 +399,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                             ),
                             const SizedBox(height: 30),
 
-                            // Campo Confirmar Senha com animação
                             SlideTransition(
                               position: _slideForm5Animation,
                               child: _buildInputField(
@@ -440,7 +425,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                               ),
                             ),
 
-                            // Checkbox de concordância com termos com animação
                             FadeTransition(
                               opacity: _fadeInTermsAnimation,
                               child: TermsAndPolicyWidget(
@@ -455,7 +439,6 @@ class _RegisterScreenState extends State<RegisterScreen>
 
                             const SizedBox(height: 24),
 
-                            // Botão de Cadastro com animação
                             FadeTransition(
                               opacity: _fadeInButtonAnimation,
                               child: SizedBox(
@@ -496,7 +479,6 @@ class _RegisterScreenState extends State<RegisterScreen>
 
                             const SizedBox(height: 24),
 
-                            // Link para Login com a mesma animação que o botão
                             FadeTransition(
                               opacity: _fadeInButtonAnimation,
                               child: Row(
@@ -551,7 +533,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
-  // Método auxiliar para criar campos de entrada padronizados
   Widget _buildInputField({
     required TextEditingController controller,
     required String label,
@@ -568,10 +549,10 @@ class _RegisterScreenState extends State<RegisterScreen>
     return Column(
       children: [
         Material(
-          elevation: 5, // Aqui você controla a sombra como no Card
-          borderRadius: BorderRadius.circular(30), // Bordas arredondadas
-          shadowColor: Colors.black.withOpacity(0.4), // Cor da sombra
-          color: Colors.white, // Fundo branco
+          elevation: 5,
+          borderRadius: BorderRadius.circular(30),
+          shadowColor: Colors.black.withOpacity(0.4),
+          color: Colors.white,
           child: TextFormField(
             key: fieldKey,
             controller: controller,
@@ -581,11 +562,6 @@ class _RegisterScreenState extends State<RegisterScreen>
             inputFormatters: inputFormatters,
             style: theme.textTheme.bodyLarge,
             decoration: InputDecoration(
-              // labelText: label,
-              // labelStyle: TextStyle(
-              //   fontWeight: FontWeight.bold,
-              //   color: Colors.grey[500],
-              // ),
               hintText: hint,
               hintStyle: TextStyle(
                 fontWeight: FontWeight.bold,
@@ -618,7 +594,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
-  // Método para verificar se o tutorial deve ser mostrado e redirecionar
   Future<void> _verificarETrocarParaTutorial() async {
     await TutorialManager.verificarENavegar(
       context,
@@ -633,10 +608,10 @@ class TermsAndPolicyWidget extends StatelessWidget {
   final Function(bool?) onChanged;
 
   const TermsAndPolicyWidget({
-    Key? key,
+    super.key,
     required this.concordaTermos,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -704,7 +679,66 @@ class TermsAndPolicyWidget extends StatelessWidget {
           content: SingleChildScrollView(
             child: Text(
               isTermos
-                  ? 'Aqui iriam os termos de uso...' // Substitua pelo texto real dos termos
+                  ? 'Termos de Uso do Aplicativo\n\n'
+                      'Estes Termos de Uso regulam o uso do aplicativo por parte dos usuários e estabelecem os '
+                      'direitos e deveres das partes. Ao utilizar o aplicativo, o usuário concorda com estes termos.\n\n'
+                      '1. Aceitação dos Termos\n'
+                      'Ao acessar ou usar este aplicativo, o usuário declara que leu, entendeu e concorda com os '
+                      'presentes Termos de Uso e com a Política de Privacidade. Caso não concorde, o usuário '
+                      'deve desinstalar o aplicativo e interromper seu uso imediatamente.\n\n'
+                      '2. Cadastro e Conta do Usuário\n'
+                      'Para utilizar as funcionalidades do aplicativo, o usuário deve criar uma conta, fornecendo:\n'
+                      '• Nome completo\n'
+                      '• CPF\n'
+                      '• E-mail\n'
+                      '• Senha\n\n'
+                      'O usuário se compromete a fornecer informações verídicas, completas e atualizadas.\n\n'
+                      '3. Responsabilidades do Usuário\n'
+                      'O usuário se compromete a:\n'
+                      '• Utilizar o aplicativo de forma lícita, ética e responsável;\n'
+                      '• Não compartilhar sua conta com terceiros;\n'
+                      '• Não enviar informações falsas, ofensivas, ilícitas ou que infrinjam direitos de terceiros;\n'
+                      '• Manter a confidencialidade da sua senha.\n\n'
+                      '3.1. Conteúdo Inadequado ou Fora do Escopo\n'
+                      'O usuário não deve utilizar o aplicativo para enviar conteúdos que não estejam '
+                      'relacionados ao propósito principal da plataforma, como o registro de buracos nas vias '
+                      'públicas ou problemas urbanos. É proibido o envio de mensagens promocionais, denúncias '
+                      'não relacionadas, opiniões pessoais, propagandas, ou qualquer outro conteúdo que fuja ao '
+                      'escopo do aplicativo.\n\n'
+                      '4. Funcionalidades do Aplicativo\n'
+                      'O aplicativo permite:\n'
+                      '• Envio de registros contendo dados de localização e imagens;\n'
+                      '• Anexar fotos tiradas no momento;\n'
+                      '• Armazenamento seguro das informações enviadas;\n'
+                      '• Visualização e gestão dos próprios registros.\n\n'
+                      '5. Permissões Requeridas\n'
+                      'Para seu pleno funcionamento, o aplicativo pode solicitar permissões de:\n'
+                      '• Localização: para registrar a posição geográfica dos eventos;\n'
+                      '• Câmera: para permitir a captura de imagens em tempo real;\n\n'
+                      'As permissões são solicitadas com o consentimento do usuário e podem ser desativadas a '
+                      'qualquer momento nas configurações do dispositivo.\n\n'
+                      '6. Propriedade Intelectual\n'
+                      'Todos os direitos relativos ao aplicativo, incluindo textos, imagens, códigos e '
+                      'funcionalidades, são de propriedade da equipe desenvolvedora, sendo vedada a '
+                      'reprodução, cópia ou modificação sem autorização prévia.\n\n'
+                      '7. Limitação de Responsabilidade\n'
+                      'O aplicativo é fornecido "como está", não havendo garantias de funcionamento contínuo ou '
+                      'livre de erros. A equipe não se responsabiliza por:\n'
+                      '• Danos decorrentes de uso indevido do aplicativo;\n'
+                      '• Interrupções ou falhas na disponibilidade do serviço;\n'
+                      '• Conteúdos enviados por usuários.\n\n'
+                      '8. Cancelamento e Exclusão\n'
+                      'O usuário pode excluir sua conta a qualquer momento, sendo seus dados apagados '
+                      'conforme previsto na Política de Privacidade.\n\n'
+                      '9. Alterações nos Termos\n'
+                      'Reservamo-nos o direito de alterar estes Termos de Uso a qualquer momento. As '
+                      'alterações entrarão em vigor na data de sua publicação no aplicativo ou site.\n\n'
+                      '10. Contato\n'
+                      'Em caso de dúvidas, sugestões ou solicitações, o usuário pode entrar em contato por meio '
+                      'dos canais disponibilizados no aplicativo.\n\n'
+                      '11. Foro\n'
+                      'Este contrato será regido pelas leis brasileiras. Quaisquer disputas serão resolvidas no foro '
+                      'da comarca da cidade-sede do projeto, salvo disposição legal em contrário.'
                   : 'Política de Privacidade\n\n'
                       'Este aplicativo coleta e armazena dados pessoais fornecidos voluntariamente pelo usuário, '
                       'incluindo nome, CPF, e-mail e senha. Esses dados são usados para autenticação, '

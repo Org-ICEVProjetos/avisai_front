@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'package:avisai4/data/providers/api_provider.dart';
-import 'package:avisai4/services/user_storage.dart';
+import 'package:avisai4/services/user_storage_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../data/models/usuario.dart';
@@ -89,13 +88,8 @@ abstract class AuthState extends Equatable {
   List<Object> get props => [];
 }
 
-class LoginAutomaticoSolicitado extends AuthEvent {
-  final Usuario usuario;
-
-  const LoginAutomaticoSolicitado({required this.usuario});
-
-  @override
-  List<Object> get props => [usuario];
+class ValidarTokenAutomatico extends AuthEvent {
+  const ValidarTokenAutomatico();
 }
 
 class NaoAutenticado extends AuthState {}
@@ -139,25 +133,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<VerificarTokenSenhaSolicitado>(_onVerificarTokenSenhaSolicitado);
     on<AlterarSenhaSolicitada>(_onAlterarSenhaSolicitada);
     on<LogoutSolicitado>(_onLogoutSolicitado);
-    on<LoginAutomaticoSolicitado>(_onLoginAutomaticoSolicitado);
+    on<ValidarTokenAutomatico>(_onValidarTokenAutomatico);
   }
 
+  // Verifica autenticação para solicitar login automático
   Future<void> _onVerificarAutenticacao(
     VerificarAutenticacao event,
     Emitter<AuthState> emit,
   ) async {
-    // Não emitir Carregando aqui para não acionar a transição na SplashScreen
-    // Apenas verificar silenciosamente
     try {
-      final usuario = await _authRepository.checarAutenticacao();
-      if (usuario != null) {
-        // Verificamos se o evento tem um flag para sinalizar que veio da SplashScreen
-        // Se for silencioso, não emitimos o estado Autenticado ainda
-        if (event.fromSplash) {
-          emit(Autenticado(usuario));
-        }
-      } else {
-        if (event.fromSplash) {
+      final temDadosLocais =
+          await UserLocalStorage.verificarUsuarioAutenticado();
+      final temTokens =
+          await UserLocalStorage.obterToken() != null &&
+          await UserLocalStorage.obterRefreshToken() != null;
+
+      if (event.fromSplash) {
+        if (temDadosLocais && temTokens) {
+          add(const ValidarTokenAutomatico());
+        } else {
           emit(NaoAutenticado());
         }
       }
@@ -168,22 +162,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onLoginAutomaticoSolicitado(
-    LoginAutomaticoSolicitado event,
+  // Faz login automático (sem necessidade de CPF e senha)
+  Future<void> _onValidarTokenAutomatico(
+    ValidarTokenAutomatico event,
     Emitter<AuthState> emit,
   ) async {
     emit(Carregando());
 
     try {
-      // Já temos todos os dados necessários no evento
-      emit(Autenticado(event.usuario));
+      final usuario = await _authRepository.validarTokenERenovar();
+
+      if (usuario != null) {
+        emit(Autenticado(usuario));
+      } else {
+        emit(NaoAutenticado());
+      }
     } catch (e) {
+      if (kDebugMode) {
+        print('Erro no login automático: $e');
+      }
       emit(NaoAutenticado());
-      // Limpar dados locais em caso de erro
-      await UserLocalStorage.removerUsuario();
     }
   }
 
+  // Login no app
   Future<void> _onLoginSolicitado(
     LoginSolicitado event,
     Emitter<AuthState> emit,
@@ -193,15 +195,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final usuario = await _authRepository.login(event.cpf, event.senha);
       emit(Autenticado(usuario));
     } catch (e) {
-      // Personalizar mensagem baseada no tipo de erro
       String mensagem = 'Erro ao fazer login: $e';
       if (e is ApiException) {
-        mensagem = e.message; // Usa a mensagem específica do servidor
+        mensagem = e.message;
       }
       emit(AuthErro(mensagem));
     }
   }
 
+  // Registro de conta no app
   Future<void> _onRegistroSolicitado(
     RegistroSolicitado event,
     Emitter<AuthState> emit,
@@ -216,15 +218,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(Autenticado(usuario));
     } catch (e) {
-      // Personalizar mensagem baseada no tipo de erro
       String mensagem = 'Erro ao registrar usuário: $e';
       if (e is ApiException) {
-        mensagem = e.message; // Usa a mensagem específica do servidor
+        mensagem = e.message;
       }
       emit(AuthErro(mensagem));
     }
   }
 
+  // Solicita recuperação de senha
   Future<void> _onRecuperacaoSenhaSolicitada(
     RecuperacaoSenhaSolicitada event,
     Emitter<AuthState> emit,
@@ -234,15 +236,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authRepository.recuperarSenha(event.cpf, event.email);
       emit(RecuperacaoSenhaEnviada());
     } catch (e) {
-      // Personalizar mensagem baseada no tipo de erro
       String mensagem = 'Erro ao recuperar senha: $e';
       if (e is ApiException) {
-        mensagem = e.message; // Usa a mensagem específica do servidor
+        mensagem = e.message;
       }
       emit(AuthErro(mensagem));
     }
   }
 
+  // Verifica se o código enviado pela solicitação de troca de seneha é válido
   Future<void> _onVerificarTokenSenhaSolicitado(
     VerificarTokenSenhaSolicitado event,
     Emitter<AuthState> emit,
@@ -256,15 +258,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthErro('Código inválido ou expirado'));
       }
     } catch (e) {
-      // Personalizar mensagem baseada no tipo de erro
       String mensagem = 'Erro ao validar código: $e';
       if (e is ApiException) {
-        mensagem = e.message; // Usa a mensagem específica do servidor
+        mensagem = e.message;
       }
       emit(AuthErro(mensagem));
     }
   }
 
+  // Altera a senha da conta logada
   Future<void> _onAlterarSenhaSolicitada(
     AlterarSenhaSolicitada event,
     Emitter<AuthState> emit,
@@ -281,15 +283,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthErro('Não foi possível alterar a senha'));
       }
     } catch (e) {
-      // Personalizar mensagem baseada no tipo de erro
       String mensagem = 'Erro ao alterar senha: $e';
       if (e is ApiException) {
-        mensagem = e.message; // Usa a mensagem específica do servidor
+        mensagem = e.message;
       }
       emit(AuthErro(mensagem));
     }
   }
 
+  // Faz logout
   Future<void> _onLogoutSolicitado(
     LogoutSolicitado event,
     Emitter<AuthState> emit,
@@ -300,23 +302,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await UserLocalStorage.removerUsuario();
       emit(NaoAutenticado());
     } catch (e) {
-      // Para logout, mesmo com erro, limpa os dados locais
       await UserLocalStorage.removerUsuario();
       emit(NaoAutenticado());
 
-      // Log do erro mas não mostra para o usuário
       if (kDebugMode) {
         print('Erro durante logout: $e');
       }
     }
-  }
-
-  // Método utilitário que pode ser usado em qualquer parte do app
-  Usuario? getUsuarioAtual(BuildContext context) {
-    final authState = context.read<AuthBloc>().state;
-    if (authState is Autenticado) {
-      return authState.usuario;
-    }
-    return null;
   }
 }

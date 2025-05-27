@@ -52,6 +52,7 @@ class ConnectivityBloc extends Bloc<ConnectivityEvent, ConnectivityState> {
     add(CheckConnectivity());
   }
 
+  // Verifica mudança de conexão
   void _onConnectivityStatusChanged(
     ConnectivityStatusChanged event,
     Emitter<ConnectivityState> emit,
@@ -63,6 +64,7 @@ class ConnectivityBloc extends Bloc<ConnectivityEvent, ConnectivityState> {
     }
   }
 
+  // Checa se está conectado
   void _onCheckConnectivity(
     CheckConnectivity event,
     Emitter<ConnectivityState> emit,

@@ -1,4 +1,3 @@
-import 'package:avisai4/presentation/screens/auth/verificar_token_password.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,7 +21,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   bool _carregando = false;
   bool _enviado = false;
 
-  // Animation controllers
   late AnimationController _animationController;
   late Animation<double> _fadeInAnimation;
   late Animation<Offset> _slideTextAnimation;
@@ -36,13 +34,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   void initState() {
     super.initState();
 
-    // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
 
-    // Fade in animation for the whole screen
     _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
@@ -50,7 +46,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       ),
     );
 
-    // Slide animations for each element
     _slideTextAnimation = Tween<Offset>(
       begin: const Offset(-0.5, 0),
       end: Offset.zero,
@@ -108,7 +103,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       ),
     );
 
-    // Start animation after short delay
     Future.delayed(const Duration(milliseconds: 100), () {
       _animationController.forward();
     });
@@ -171,7 +165,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 1, // Agora tem uma leve sombra
+        elevation: 1,
         centerTitle: false,
         title: Text(
           'Recuperar senha',
@@ -185,8 +179,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new,
-            size: 28, // Ícone maior
-            color: Colors.black, // Ícone mais forte
+            size: 28,
+            color: Colors.black,
           ),
           onPressed: () {
             Navigator.of(context).pop();
@@ -214,18 +208,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               _enviado = true;
             });
 
-            // Navegar para a próxima tela de verificação de token
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder:
-                    (context) => VerifyTokenScreen(
-                      cpf: _cpfController.text,
-                      email: _emailController.text,
-                    ),
-              ),
+            Navigator.of(context).pushReplacementNamed(
+              '/verify-token',
+              arguments: {
+                'cpf': _cpfController.text,
+                'email': _emailController.text,
+              },
             );
 
-            // Reiniciar a animação quando recebe confirmação
             _animationController.reset();
             _animationController.forward();
           }
@@ -248,7 +238,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     );
   }
 
-  // Tela de formulário para inserir CPF e email
   Widget _buildFormScreen(
     ThemeData theme,
     double imageWidth,
@@ -257,7 +246,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Texto explicativo com animação
         SlideTransition(
           position: _slideTextAnimation,
           child: Text.rich(
@@ -297,12 +285,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         ),
         const SizedBox(height: 32),
 
-        // Formulário com animações
         Form(
           key: _formKey,
           child: Column(
             children: [
-              // CPF com animação
               SlideTransition(
                 position: _slideForm1Animation,
                 child: _buildInputField(
@@ -317,7 +303,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               ),
               const SizedBox(height: 16),
 
-              // Email com animação
               SlideTransition(
                 position: _slideForm2Animation,
                 child: _buildInputField(
@@ -335,7 +320,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
         const SizedBox(height: 16),
 
-        // Botão Recuperar Senha com animação
         SlideTransition(
           position: _slideButtonAnimation,
           child: SizedBox(
@@ -372,7 +356,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
         const SizedBox(height: 32),
 
-        // Imagem com animação
         SlideTransition(
           position: _slideImageAnimation,
           child: Center(
@@ -402,7 +385,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     );
   }
 
-  // Tela de sucesso após envio do formulário
   Widget _buildSuccessScreen(
     ThemeData theme,
     double imageWidth,
@@ -415,12 +397,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         children: [
           const SizedBox(height: 24),
 
-          // Ícone de sucesso
           Icon(Icons.check_circle, size: 80, color: Colors.green),
 
           const SizedBox(height: 24),
 
-          // Título de sucesso
           Text(
             'Solicitação enviada com sucesso!',
             textAlign: TextAlign.center,
@@ -434,7 +414,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
           const SizedBox(height: 16),
 
-          // Texto explicativo
           Text(
             'Verifique seu e-mail para as instruções de recuperação de senha.',
             textAlign: TextAlign.center,
@@ -448,7 +427,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
           const SizedBox(height: 32),
 
-          // Imagem de confirmação
           Image.asset(
             'assets/images/email_enviado.png',
             height: imageHeight,
@@ -472,7 +450,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
           const SizedBox(height: 32),
 
-          // Botão para voltar
           SizedBox(
             width: double.infinity,
             height: 56,
@@ -503,7 +480,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     );
   }
 
-  // Método auxiliar para criar campos de entrada padronizados
   Widget _buildInputField({
     required TextEditingController controller,
     required String label,
@@ -520,10 +496,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     return Column(
       children: [
         Material(
-          elevation: 5, // Aqui você controla a sombra como no Card
-          borderRadius: BorderRadius.circular(30), // Bordas arredondadas
-          shadowColor: Colors.black.withOpacity(0.4), // Cor da sombra
-          color: Colors.white, // Fundo branco
+          elevation: 5,
+          borderRadius: BorderRadius.circular(30),
+          shadowColor: Colors.black.withOpacity(0.4),
+          color: Colors.white,
           child: TextFormField(
             key: fieldKey,
             controller: controller,
