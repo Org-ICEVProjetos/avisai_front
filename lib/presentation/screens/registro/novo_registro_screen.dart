@@ -183,7 +183,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
         setState(() {
           _inicializando = false;
           _erroCamera = true;
-          _mensagemErro = 'Erro ao inicializar câmera: $e';
+          _mensagemErro = 'Erro ao inicializar câmera';
         });
       }
     }

@@ -344,6 +344,45 @@ class ApiProvider {
     }
   }
 
+  // Requisição de registro de conta
+  Future<bool> excluirUsuario(Usuario usuario) async {
+    final url = Uri.parse('$baseUrl/user/delete');
+
+    try {
+      final headersCorrected = {
+        ...headers,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json; charset=utf-8',
+      };
+
+      final response = await http.delete(url, headers: headersCorrected);
+
+      if (response.statusCode == 204) {
+        _logoutForcadoController.add(true);
+        return true;
+      } else {
+        if (response.body.isNotEmpty) {
+          final erro = jsonDecode(utf8.decode(response.bodyBytes));
+          throw ApiException(
+            _corrigirTextoAcentuado(erro['message']),
+            statusCode: response.statusCode,
+          );
+        } else {
+          throw ApiException(
+            'Erro ao registrar usuário. Resposta vazia.',
+            statusCode: response.statusCode,
+          );
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print(e.toString());
+      }
+      if (e is ApiException) rethrow;
+      throw ApiException('Erro de conexão: ${e.toString()}');
+    }
+  }
+
   // Método para corrigir textos com problemas de codificação
   String _corrigirTextoAcentuado(String texto) {
     final Map<String, String> substituicoes = {

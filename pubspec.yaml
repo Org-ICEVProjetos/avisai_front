@@ -52,6 +52,7 @@ flutter:
     - 'assets/images/onboarding_report.png'
     - 'assets/images/onboarding_welcome.png'
     - 'assets/images/logo.png'
+    - 'assets/images/logo.gif'
     - 'assets/images/login.png'
     - 'assets/images/recuperacao_senha.png'
     - 'assets/images/placeholder.png'

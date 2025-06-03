@@ -22,7 +22,12 @@ class LocalStorageService {
   Future<Database> _initDatabase() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
     String path = join(documentsDirectory.path, 'avisai.db');
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(
+      path,
+      version: 2,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   //Cria tabela para usuários e registros localmente
@@ -45,9 +50,22 @@ class LocalStorageService {
     status TEXT,
     sincronizado INTEGER,
     validadoPorUsuarioId TEXT,
-    dataValidacao TEXT
+    dataValidacao TEXT,
+    resposta TEXT
   )
 ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Adiciona a nova coluna "resposta"
+      await db.execute('ALTER TABLE registros ADD COLUMN resposta TEXT');
+    }
+
+    // Para futuras versões, adicione mais condições:
+    // if (oldVersion < 3) {
+    //   await db.execute('ALTER TABLE registros ADD COLUMN outraColuna TEXT');
+    // }
   }
 
   // Método para obter registros salvos localmente

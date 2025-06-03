@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:avisai4/bloc/registro/registro_bloc.dart';
 import 'package:avisai4/data/providers/api_provider.dart';
+import 'package:avisai4/presentation/screens/auth/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -33,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _forcarLogout(context);
       }
     });
-    solicitarPermissaoCamera();
+    solicitarPermissao();
   }
 
   @override
@@ -59,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
           isVisible: _indiceAbaSelecionada == 1,
         ),
         const MapaIrregularidadesScreen(),
+        const PerfilScreen(),
       ]);
     }
   }
@@ -79,12 +81,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<bool> solicitarPermissaoCamera() async {
-    PermissionStatus status = await Permission.camera.request();
-    await Permission.location.request();
-    if (status.isGranted) {
+  Future<bool> solicitarPermissao() async {
+    PermissionStatus statusCamera = await Permission.camera.request();
+    PermissionStatus statuslocation = await Permission.location.request();
+    if (statusCamera.isGranted && statuslocation.isGranted) {
       return true;
-    } else if (status.isPermanentlyDenied) {
+    } else if (statusCamera.isPermanentlyDenied ||
+        statuslocation.isPermanentlyDenied) {
       await openAppSettings();
       return false;
     } else {
@@ -100,6 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Registrar';
       case 2:
         return 'Mapa';
+      case 3:
+        return 'Perfil';
       default:
         return 'Avisaí';
     }
@@ -276,6 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
           currentIndex: _indiceAbaSelecionada,
           onTap: (indice) {
             setState(() {
@@ -312,6 +318,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               label: 'Mapa',
             ),
+            BottomNavigationBarItem(
+              icon: Icon(
+                _indiceAbaSelecionada == 3
+                    ? Icons.person
+                    : Icons.person_outline,
+                size: 35,
+              ),
+              label: 'Perfil',
+            ),
           ],
         ),
       ),
@@ -319,6 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _forcarLogout(BuildContext context) {
+    Navigator.of(context).pop();
     context.read<AuthBloc>().add(LogoutSolicitado());
   }
 }

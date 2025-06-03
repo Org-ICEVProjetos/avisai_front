@@ -20,6 +20,7 @@ class Registro {
   final bool sincronizado;
   final String? validadoPorUsuarioId;
   final DateTime? dataValidacao;
+  final String? resposta; // NOVA PROPRIEDADE
 
   Registro({
     this.id,
@@ -39,6 +40,7 @@ class Registro {
     this.sincronizado = false,
     this.validadoPorUsuarioId,
     this.dataValidacao,
+    this.resposta, // ADICIONAR AQUI
   });
 
   Registro copyWith({
@@ -59,6 +61,7 @@ class Registro {
     bool? sincronizado,
     String? validadoPorUsuarioId,
     DateTime? dataValidacao,
+    String? resposta, // ADICIONAR AQUI
   }) {
     return Registro(
       id: id ?? this.id,
@@ -78,6 +81,7 @@ class Registro {
       sincronizado: sincronizado ?? this.sincronizado,
       validadoPorUsuarioId: validadoPorUsuarioId ?? this.validadoPorUsuarioId,
       dataValidacao: dataValidacao ?? this.dataValidacao,
+      resposta: resposta ?? this.resposta, // ADICIONAR AQUI
     );
   }
 
@@ -100,6 +104,7 @@ class Registro {
       'sincronizado': sincronizado ? 1 : 0,
       'validadoPorUsuarioId': validadoPorUsuarioId,
       'dataValidacao': dataValidacao?.toIso8601String(),
+      'resposta': resposta, // ADICIONAR AQUI
     };
   }
 
@@ -120,6 +125,7 @@ class Registro {
       'synchronizedStatus': sincronizado ? 1 : 0,
       'validatedByUserId': validadoPorUsuarioId,
       'validationDate': dataValidacao?.toIso8601String(),
+      'response': resposta, // MAPEAMENTO PARA API
     };
   }
 
@@ -146,6 +152,7 @@ class Registro {
     final String photoPath =
         isApiJson ? (json['photoPath'] ?? '') : (json['photoPath'] ?? '');
     final String? observation = json['observation'];
+    final String? resposta = isApiJson ? json['response'] : json['resposta'];
 
     return Registro(
       id: id,
@@ -162,6 +169,7 @@ class Registro {
       photoPath: photoPath,
       observation: _normalizarTexto(observation),
       status: _statusFromString(json['status'] ?? 'PENDENTE_VALIDACAO'),
+      resposta: _normalizarTexto(resposta),
       sincronizado: isApiJson ? true : (json['sincronizado'] == 1),
       validadoPorUsuarioId:
           isApiJson ? json['validatedByUserId'] : json['validadoPorUsuarioId'],

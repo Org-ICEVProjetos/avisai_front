@@ -50,6 +50,10 @@ class RegistroSolicitado extends AuthEvent {
   List<Object> get props => [nome, cpf, email, senha];
 }
 
+class ExclusaoSolicitado extends AuthEvent {
+  const ExclusaoSolicitado();
+}
+
 class RecuperacaoSenhaSolicitada extends AuthEvent {
   final String cpf;
   final String email;
@@ -129,6 +133,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<VerificarAutenticacao>(_onVerificarAutenticacao);
     on<LoginSolicitado>(_onLoginSolicitado);
     on<RegistroSolicitado>(_onRegistroSolicitado);
+    on<ExclusaoSolicitado>(_onExclusaoSolicitada);
     on<RecuperacaoSenhaSolicitada>(_onRecuperacaoSenhaSolicitada);
     on<VerificarTokenSenhaSolicitado>(_onVerificarTokenSenhaSolicitado);
     on<AlterarSenhaSolicitada>(_onAlterarSenhaSolicitada);
@@ -219,6 +224,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(Autenticado(usuario));
     } catch (e) {
       String mensagem = 'Erro ao registrar usuário: $e';
+      if (e is ApiException) {
+        mensagem = e.message;
+      }
+      emit(AuthErro(mensagem));
+    }
+  }
+
+  // Exclusão de conta no app
+  Future<void> _onExclusaoSolicitada(
+    ExclusaoSolicitado event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(Carregando());
+    try {
+      await _authRepository.excluirConta();
+      emit(NaoAutenticado());
+    } catch (e) {
+      String mensagem = 'Erro ao excluir conta: $e';
       if (e is ApiException) {
         mensagem = e.message;
       }

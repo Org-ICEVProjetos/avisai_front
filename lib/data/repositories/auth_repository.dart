@@ -100,6 +100,21 @@ class AuthRepository {
     }
   }
 
+  // Chama a API para solicitação de exclusão de conta
+  Future<bool> excluirConta() async {
+    try {
+      final usuario = await UserLocalStorage.obterUsuario();
+
+      final resultado = await _apiProvider.excluirUsuario(usuario!);
+
+      await UserLocalStorage.removerUsuario();
+
+      return resultado;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Chama API para solicitação de recuperação de senha
   Future<bool> recuperarSenha(String cpf, String email) async {
     try {

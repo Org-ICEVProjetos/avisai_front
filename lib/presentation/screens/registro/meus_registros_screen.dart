@@ -178,6 +178,20 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                         });
                       },
                     ),
+                    _buildCheckboxOption(
+                      'Outros',
+                      _filtroCategoria == CategoriaIrregularidade.outro,
+                      (value) {
+                        setStateModal(() {
+                          if (value == true) {
+                            _filtroCategoria = CategoriaIrregularidade.outro;
+                          } else if (_filtroCategoria ==
+                              CategoriaIrregularidade.outro) {
+                            _filtroCategoria = null;
+                          }
+                        });
+                      },
+                    ),
 
                     const SizedBox(height: 24),
 
@@ -190,27 +204,42 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        _buildStatusButton(
-                          'Pendente',
-                          StatusValidacao.pendente,
-                          setStateModal,
-                        ),
-                        const SizedBox(width: 8),
-                        _buildStatusButton(
-                          'Aceito',
-                          StatusValidacao.validado,
-                          setStateModal,
-                        ),
-                        const SizedBox(width: 8),
-                        _buildStatusButton(
-                          'Recusado',
-                          StatusValidacao.naoValidado,
-                          setStateModal,
-                        ),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          _buildStatusButton(
+                            'Pendente',
+                            StatusValidacao.pendente,
+                            setStateModal,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildStatusButton(
+                            'Aceito',
+                            StatusValidacao.validado,
+                            setStateModal,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildStatusButton(
+                            'Recusado',
+                            StatusValidacao.naoValidado,
+                            setStateModal,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildStatusButton(
+                            'Em rota',
+                            StatusValidacao.emRota,
+                            setStateModal,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildStatusButton(
+                            'Resolvido',
+                            StatusValidacao.resolvido,
+                            setStateModal,
+                          ),
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 32),
@@ -284,8 +313,8 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
   ) {
     final bool isSelecionado = _filtroStatus == status;
 
-    return Flexible(
-      fit: FlexFit.loose,
+    return SizedBox(
+      width: 100,
       child: OutlinedButton(
         onPressed: () {
           setStateModal(() {
@@ -409,11 +438,12 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                   const SizedBox(height: 12),
 
                   SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Flexible(
-                          fit: FlexFit.loose,
+                        SizedBox(
+                          width: 140,
                           child: OutlinedButton(
                             onPressed: () {
                               setState(() {
@@ -458,8 +488,8 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
 
                         const SizedBox(width: 8),
 
-                        Flexible(
-                          fit: FlexFit.loose,
+                        SizedBox(
+                          width: 140,
 
                           child: OutlinedButton(
                             onPressed: () {
@@ -505,8 +535,8 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
 
                         const SizedBox(width: 8),
 
-                        Flexible(
-                          fit: FlexFit.loose,
+                        SizedBox(
+                          width: 140,
                           child: OutlinedButton(
                             onPressed: () {
                               setState(() {
@@ -540,6 +570,96 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                               style: TextStyle(
                                 color:
                                     _filtroStatus == StatusValidacao.naoValidado
+                                        ? Colors.white
+                                        : Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        SizedBox(
+                          width: 140,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _filtroStatus =
+                                    _filtroStatus == StatusValidacao.emRota
+                                        ? null
+                                        : StatusValidacao.emRota;
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor:
+                                  _filtroStatus == StatusValidacao.emRota
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.white,
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 12,
+                              ),
+                              minimumSize: Size(140, 30),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              'Em rota',
+                              style: TextStyle(
+                                color:
+                                    _filtroStatus == StatusValidacao.emRota
+                                        ? Colors.white
+                                        : Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        SizedBox(
+                          width: 140,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _filtroStatus =
+                                    _filtroStatus == StatusValidacao.resolvido
+                                        ? null
+                                        : StatusValidacao.resolvido;
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor:
+                                  _filtroStatus == StatusValidacao.resolvido
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.white,
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 12,
+                              ),
+                              minimumSize: Size(140, 30),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              'Resolvido',
+                              style: TextStyle(
+                                color:
+                                    _filtroStatus == StatusValidacao.resolvido
                                         ? Colors.white
                                         : Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.w500,

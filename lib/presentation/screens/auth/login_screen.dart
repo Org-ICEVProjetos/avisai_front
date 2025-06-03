@@ -155,347 +155,352 @@ class _LoginScreenState extends State<LoginScreen>
 
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthErro) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.mensagem),
-                duration: Duration(seconds: 3),
-                backgroundColor: theme.colorScheme.error,
-              ),
-            );
-            setState(() {
-              _carregando = false;
-            });
-          } else if (state is Autenticado) {
-            _verificarETrocarParaTutorial();
-          }
-        },
-        builder: (context, state) {
-          return SafeArea(
-            child: FadeTransition(
-              opacity: _fadeInAnimation,
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 20),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: BlocConsumer<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is AuthErro) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.mensagem),
+                  duration: Duration(seconds: 3),
+                  backgroundColor: theme.colorScheme.error,
+                ),
+              );
+              setState(() {
+                _carregando = false;
+              });
+            } else if (state is Autenticado) {
+              _verificarETrocarParaTutorial();
+            }
+          },
+          builder: (context, state) {
+            return SafeArea(
+              child: FadeTransition(
+                opacity: _fadeInAnimation,
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 20),
 
-                      SlideTransition(
-                        position: _slideImageAnimation,
-                        child: Center(
-                          child: SizedBox(
-                            width: imageWidth,
-                            height: imageHeight,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12.0),
-                              child: Image.asset(
-                                'assets/images/login.png',
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: imageWidth,
-                                    height: imageHeight,
-                                    decoration: BoxDecoration(
-                                      color: theme.primaryColorLight,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      size: 80,
-                                      color: theme.primaryColorDark,
-                                    ),
-                                  );
-                                },
+                        SlideTransition(
+                          position: _slideImageAnimation,
+                          child: Center(
+                            child: SizedBox(
+                              width: imageWidth,
+                              height: imageHeight,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12.0),
+                                child: Image.asset(
+                                  'assets/images/login.png',
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: imageWidth,
+                                      height: imageHeight,
+                                      decoration: BoxDecoration(
+                                        color: theme.primaryColorLight,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        size: 80,
+                                        color: theme.primaryColorDark,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
 
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      SlideTransition(
-                        position: _slideTitleAnimation,
-                        child: Text(
-                          'Login',
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            color: theme.primaryColor,
-                            fontSize: 38,
-                            fontWeight: FontWeight.bold,
+                        SlideTransition(
+                          position: _slideTitleAnimation,
+                          child: Text(
+                            'Login',
+                            style: theme.textTheme.displaySmall?.copyWith(
+                              color: theme.primaryColor,
+                              fontSize: 38,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                      ),
 
-                      SlideTransition(
-                        position: _slideSubtitleAnimation,
-                        child: Text(
-                          'Seja bem-vindo(a) de volta!',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey[800],
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        SlideTransition(
+                          position: _slideSubtitleAnimation,
+                          child: Text(
+                            'Seja bem-vindo(a) de volta!',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: Colors.grey[800],
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                      ),
 
-                      const SizedBox(height: 30),
+                        const SizedBox(height: 30),
 
-                      SlideTransition(
-                        position: _slideFormAnimation,
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Material(
-                                elevation: 5,
-                                borderRadius: BorderRadius.circular(30),
-                                shadowColor: Colors.black.withOpacity(0.4),
-                                color: Colors.white,
-                                child: TextFormField(
-                                  key: _cpfFieldKey,
-                                  controller: _cpfController,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    MaskedInputFormatter('000.000.000-00'),
-                                  ],
-                                  style: theme.textTheme.bodyLarge,
-                                  decoration: InputDecoration(
-                                    hintText: 'Digite seu CPF',
-                                    hintStyle: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[500],
+                        SlideTransition(
+                          position: _slideFormAnimation,
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Material(
+                                  elevation: 5,
+                                  borderRadius: BorderRadius.circular(30),
+                                  shadowColor: Colors.black.withOpacity(0.4),
+                                  color: Colors.white,
+                                  child: TextFormField(
+                                    key: _cpfFieldKey,
+                                    controller: _cpfController,
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      MaskedInputFormatter('000.000.000-00'),
+                                    ],
+                                    style: theme.textTheme.bodyLarge,
+                                    decoration: InputDecoration(
+                                      hintText: 'Digite seu CPF',
+                                      hintStyle: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[500],
+                                      ),
                                     ),
+                                    validator: _validarCPF,
+                                    autovalidateMode:
+                                        AutovalidateMode.onUserInteraction,
                                   ),
-                                  validator: _validarCPF,
-                                  autovalidateMode:
-                                      AutovalidateMode.onUserInteraction,
                                 ),
-                              ),
-                              Builder(
-                                builder: (context) {
-                                  final errorText =
-                                      _cpfFieldKey.currentState?.errorText;
-                                  if (errorText != null &&
-                                      errorText.isNotEmpty) {
-                                    return Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          left: 8.0,
-                                          top: 4.0,
-                                        ),
-                                        child: Text(
-                                          errorText,
-                                          style: TextStyle(
-                                            color: Colors.red,
-                                            fontSize: 12,
+                                Builder(
+                                  builder: (context) {
+                                    final errorText =
+                                        _cpfFieldKey.currentState?.errorText;
+                                    if (errorText != null &&
+                                        errorText.isNotEmpty) {
+                                      return Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            left: 8.0,
+                                            top: 4.0,
                                           ),
-                                          textAlign: TextAlign.left,
+                                          child: Text(
+                                            errorText,
+                                            style: TextStyle(
+                                              color: Colors.red,
+                                              fontSize: 12,
+                                            ),
+                                            textAlign: TextAlign.left,
+                                          ),
                                         ),
+                                      );
+                                    } else {
+                                      return SizedBox.shrink();
+                                    }
+                                  },
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                Material(
+                                  elevation: 5,
+                                  borderRadius: BorderRadius.circular(30),
+                                  shadowColor: Colors.black.withOpacity(0.4),
+                                  color: Colors.white,
+                                  child: TextFormField(
+                                    key: _senhaFieldKey,
+                                    controller: _senhaController,
+                                    obscureText: !_mostrarSenha,
+                                    style: theme.textTheme.bodyLarge,
+                                    decoration: InputDecoration(
+                                      hintText: 'Digite sua senha',
+                                      hintStyle: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[500],
                                       ),
-                                    );
-                                  } else {
-                                    return SizedBox.shrink();
-                                  }
-                                },
-                              ),
-
-                              const SizedBox(height: 20),
-
-                              Material(
-                                elevation: 5,
-                                borderRadius: BorderRadius.circular(30),
-                                shadowColor: Colors.black.withOpacity(0.4),
-                                color: Colors.white,
-                                child: TextFormField(
-                                  key: _senhaFieldKey,
-                                  controller: _senhaController,
-                                  obscureText: !_mostrarSenha,
-                                  style: theme.textTheme.bodyLarge,
-                                  decoration: InputDecoration(
-                                    hintText: 'Digite sua senha',
-                                    hintStyle: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[500],
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _mostrarSenha
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                          color: Colors.grey[700],
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _mostrarSenha = !_mostrarSenha;
+                                          });
+                                        },
+                                      ),
                                     ),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _mostrarSenha
-                                            ? Icons.visibility_off
-                                            : Icons.visibility,
-                                        color: Colors.grey[700],
-                                      ),
+                                    validator: _validarSenha,
+                                    autovalidateMode:
+                                        AutovalidateMode.onUserInteraction,
+                                  ),
+                                ),
+                                Builder(
+                                  builder: (context) {
+                                    final errorText =
+                                        _senhaFieldKey.currentState?.errorText;
+                                    if (errorText != null &&
+                                        errorText.isNotEmpty) {
+                                      return Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            left: 8.0,
+                                            top: 4.0,
+                                          ),
+                                          child: Text(
+                                            errorText,
+                                            style: TextStyle(
+                                              color: Colors.red,
+                                              fontSize: 12,
+                                            ),
+                                            textAlign: TextAlign.left,
+                                          ),
+                                        ),
+                                      );
+                                    } else {
+                                      return SizedBox.shrink();
+                                    }
+                                  },
+                                ),
+
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                      right: 8.0,
+                                      top: 8.0,
+                                    ),
+                                    child: TextButton(
                                       onPressed: () {
-                                        setState(() {
-                                          _mostrarSenha = !_mostrarSenha;
-                                        });
+                                        Navigator.of(
+                                          context,
+                                        ).pushNamed('/forgot-password');
                                       },
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: theme.primaryColor,
+                                      ),
+                                      child: Text(
+                                        'Esqueceu a senha?',
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              color: Colors.grey[800],
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
                                     ),
                                   ),
-                                  validator: _validarSenha,
-                                  autovalidateMode:
-                                      AutovalidateMode.onUserInteraction,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        FadeTransition(
+                          opacity: _fadeInButtonAnimation,
+                          child: SizedBox(
+                            height: 60,
+                            child:
+                                _carregando
+                                    ? Center(
+                                      child: CircularProgressIndicator(
+                                        color: theme.primaryColor,
+                                      ),
+                                    )
+                                    : ElevatedButton(
+                                      onPressed: _fazerLogin,
+                                      style: theme.elevatedButtonTheme.style
+                                          ?.copyWith(
+                                            shape: WidgetStateProperty.all<
+                                              RoundedRectangleBorder
+                                            >(
+                                              RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(30.0),
+                                              ),
+                                            ),
+                                            padding: WidgetStateProperty.all<
+                                              EdgeInsets
+                                            >(
+                                              const EdgeInsets.symmetric(
+                                                vertical: 16,
+                                              ),
+                                            ),
+                                          ),
+                                      child: Text(
+                                        'Entrar',
+                                        style: theme.textTheme.labelLarge
+                                            ?.copyWith(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        FadeTransition(
+                          opacity: _fadeInButtonAnimation,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Não tem uma conta?',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[500],
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Builder(
-                                builder: (context) {
-                                  final errorText =
-                                      _senhaFieldKey.currentState?.errorText;
-                                  if (errorText != null &&
-                                      errorText.isNotEmpty) {
-                                    return Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          left: 8.0,
-                                          top: 4.0,
-                                        ),
-                                        child: Text(
-                                          errorText,
-                                          style: TextStyle(
-                                            color: Colors.red,
-                                            fontSize: 12,
-                                          ),
-                                          textAlign: TextAlign.left,
-                                        ),
-                                      ),
-                                    );
-                                  } else {
-                                    return SizedBox.shrink();
-                                  }
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pushNamed('/register');
                                 },
-                              ),
-
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    right: 8.0,
-                                    top: 8.0,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: theme.primaryColor,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
                                   ),
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.of(
-                                        context,
-                                      ).pushNamed('/forgot-password');
-                                    },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: theme.primaryColor,
-                                    ),
-                                    child: Text(
-                                      'Esqueceu a senha?',
-                                      style: theme.textTheme.titleSmall
-                                          ?.copyWith(
-                                            color: Colors.grey[800],
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
+                                  minimumSize: const Size(50, 30),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  'Cadastre-se',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      FadeTransition(
-                        opacity: _fadeInButtonAnimation,
-                        child: SizedBox(
-                          height: 60,
-                          child:
-                              _carregando
-                                  ? Center(
-                                    child: CircularProgressIndicator(
-                                      color: theme.primaryColor,
-                                    ),
-                                  )
-                                  : ElevatedButton(
-                                    onPressed: _fazerLogin,
-                                    style: theme.elevatedButtonTheme.style
-                                        ?.copyWith(
-                                          shape: WidgetStateProperty.all<
-                                            RoundedRectangleBorder
-                                          >(
-                                            RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(30.0),
-                                            ),
-                                          ),
-                                          padding: WidgetStateProperty.all<
-                                            EdgeInsets
-                                          >(
-                                            const EdgeInsets.symmetric(
-                                              vertical: 16,
-                                            ),
-                                          ),
-                                        ),
-                                    child: Text(
-                                      'Entrar',
-                                      style: theme.textTheme.labelLarge
-                                          ?.copyWith(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                  ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      FadeTransition(
-                        opacity: _fadeInButtonAnimation,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Não tem uma conta?',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[500],
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pushNamed('/register');
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: theme.primaryColor,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                ),
-                                minimumSize: const Size(50, 30),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Text(
-                                'Cadastre-se',
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
