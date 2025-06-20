@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:avisai4/bloc/registro/registro_bloc.dart';
 import 'package:avisai4/data/providers/api_provider.dart';
 import 'package:avisai4/presentation/screens/auth/profile_screen.dart';
+import 'package:avisai4/services/export_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -221,6 +222,10 @@ class _HomeScreenState extends State<HomeScreen> {
         tooltip: 'Sair',
       ),
     );
+
+    if (true) {
+      acoes.add(ExportButton());
+    }
 
     return acoes;
   }

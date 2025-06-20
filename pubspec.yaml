@@ -37,6 +37,7 @@ dependencies:
   dio: ^5.8.0+1
   latlong2: ^0.9.1
   flutter_multi_formatter: ^2.13.7
+  share_plus: ^11.0.0
 
 
 dev_dependencies:

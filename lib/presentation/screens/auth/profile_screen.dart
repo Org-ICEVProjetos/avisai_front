@@ -123,7 +123,7 @@ class _PerfilScreenState extends State<PerfilScreen>
 
               // Mensagem de confirmação
               Text(
-                'Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados serão perdidos permanentemente.',
+                'Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados pessoais serão apagados do sistema.',
                 style: TextStyle(
                   fontSize: screenWidth * 0.035,
                   color: Colors.black54,
@@ -298,7 +298,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                           Icon(Icons.email, color: Colors.grey[800], size: 27),
                           SizedBox(width: screenWidth * 0.03),
                           Text(
-                            'E-mail: avisaithepi@gmail.com',
+                            'E-mail: ${usuario!.email}',
                             style: TextStyle(
                               fontSize: screenWidth * 0.035,
                               color: Colors.black54,
@@ -412,7 +412,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                             SizedBox(width: screenWidth * 0.03),
                             Expanded(
                               child: Text(
-                                usuario?.email ?? 'E-mail não disponível',
+                                'avisaithepi@gmail.com',
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.035,
                                   color: Colors.black87,

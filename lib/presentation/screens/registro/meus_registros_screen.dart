@@ -204,10 +204,9 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
+                    Center(
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
                         children: [
                           _buildStatusButton(
                             'Pendente',
@@ -313,40 +312,38 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
   ) {
     final bool isSelecionado = _filtroStatus == status;
 
-    return SizedBox(
-      width: 100,
-      child: OutlinedButton(
-        onPressed: () {
-          setStateModal(() {
-            _filtroStatus = isSelecionado ? null : status;
-          });
-        },
-        style: OutlinedButton.styleFrom(
-          backgroundColor:
-              isSelecionado
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.white,
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 1.2,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+    return Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: SizedBox(
+        width: 100,
+        child: OutlinedButton(
+          onPressed: () {
+            setStateModal(() {
+              _filtroStatus = isSelecionado ? null : status;
+            });
+          },
+          style: OutlinedButton.styleFrom(
+            backgroundColor:
+                isSelecionado ? Theme.of(context).primaryColor : Colors.white,
+            side: BorderSide(color: Theme.of(context).primaryColor, width: 1.2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
 
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          minimumSize: Size(100, 30),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color:
-                isSelecionado
-                    ? Colors.white
-                    : Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.w500,
-            fontSize: 12,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            minimumSize: Size(100, 30),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              color:
+                  isSelecionado
+                      ? Colors.white
+                      : Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
           ),
         ),
       ),
@@ -419,14 +416,14 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                           child: const Icon(
                             Icons.filter_alt,
                             color: Colors.white,
-                            size: 16,
+                            size: 20,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Filtro',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.indigo[900],
                           ),
@@ -436,241 +433,6 @@ class _MeusRegistrosScreenState extends State<MeusRegistrosScreen> {
                   ),
 
                   const SizedBox(height: 12),
-
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 140,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              setState(() {
-                                _filtroStatus =
-                                    _filtroStatus == StatusValidacao.pendente
-                                        ? null
-                                        : StatusValidacao.pendente;
-                              });
-                            },
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor:
-                                  _filtroStatus == StatusValidacao.pendente
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.white,
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
-                                width: 1.2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 12,
-                              ),
-                              minimumSize: Size(140, 30),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              'Pendente',
-                              style: TextStyle(
-                                color:
-                                    _filtroStatus == StatusValidacao.pendente
-                                        ? Colors.white
-                                        : Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        SizedBox(
-                          width: 140,
-
-                          child: OutlinedButton(
-                            onPressed: () {
-                              setState(() {
-                                _filtroStatus =
-                                    _filtroStatus == StatusValidacao.validado
-                                        ? null
-                                        : StatusValidacao.validado;
-                              });
-                            },
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor:
-                                  _filtroStatus == StatusValidacao.validado
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.white,
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
-                                width: 1.2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 12,
-                              ),
-                              minimumSize: Size(140, 30),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              'Aceito',
-                              style: TextStyle(
-                                color:
-                                    _filtroStatus == StatusValidacao.validado
-                                        ? Colors.white
-                                        : Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        SizedBox(
-                          width: 140,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              setState(() {
-                                _filtroStatus =
-                                    _filtroStatus == StatusValidacao.naoValidado
-                                        ? null
-                                        : StatusValidacao.naoValidado;
-                              });
-                            },
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor:
-                                  _filtroStatus == StatusValidacao.naoValidado
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.white,
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
-                                width: 1.2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 12,
-                              ),
-                              minimumSize: Size(140, 30),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              'Recusado',
-                              style: TextStyle(
-                                color:
-                                    _filtroStatus == StatusValidacao.naoValidado
-                                        ? Colors.white
-                                        : Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        SizedBox(
-                          width: 140,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              setState(() {
-                                _filtroStatus =
-                                    _filtroStatus == StatusValidacao.emRota
-                                        ? null
-                                        : StatusValidacao.emRota;
-                              });
-                            },
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor:
-                                  _filtroStatus == StatusValidacao.emRota
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.white,
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
-                                width: 1.2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 12,
-                              ),
-                              minimumSize: Size(140, 30),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              'Em rota',
-                              style: TextStyle(
-                                color:
-                                    _filtroStatus == StatusValidacao.emRota
-                                        ? Colors.white
-                                        : Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        SizedBox(
-                          width: 140,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              setState(() {
-                                _filtroStatus =
-                                    _filtroStatus == StatusValidacao.resolvido
-                                        ? null
-                                        : StatusValidacao.resolvido;
-                              });
-                            },
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor:
-                                  _filtroStatus == StatusValidacao.resolvido
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.white,
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
-                                width: 1.2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 12,
-                              ),
-                              minimumSize: Size(140, 30),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              'Resolvido',
-                              style: TextStyle(
-                                color:
-                                    _filtroStatus == StatusValidacao.resolvido
-                                        ? Colors.white
-                                        : Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),

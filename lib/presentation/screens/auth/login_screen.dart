@@ -1,6 +1,7 @@
 import 'package:avisai4/presentation/screens/home/onboarding_screen.dart';
 import 'package:avisai4/services/tutorial_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_multi_formatter/formatters/masked_input_formatter.dart';
 import '../../../bloc/auth/auth_bloc.dart';
@@ -147,17 +148,22 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final Size screenSize = MediaQuery.of(context).size;
-    final double imageWidth =
-        screenSize.width * 0.9 < 400 ? screenSize.width * 0.9 : 400.0;
-    final double imageHeight =
-        screenSize.height * 0.35 < 400 ? screenSize.height * 0.35 : 400.0;
-
     final theme = Theme.of(context);
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final screenWidth = mediaQuery.size.width;
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final isKeyboardVisible = keyboardHeight > 0;
+
+    // Detecta diferentes tipos de tela
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+    final isTablet = screenWidth > 600;
 
     return PopScope(
       canPop: false,
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         backgroundColor: theme.scaffoldBackgroundColor,
         body: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
@@ -181,202 +187,167 @@ class _LoginScreenState extends State<LoginScreen>
               child: FadeTransition(
                 opacity: _fadeInAnimation,
                 child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
                   child: Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 48.0 : 24.0,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const SizedBox(height: 20),
+                        // Seção superior com imagem e título
+                        if (!isKeyboardVisible || !isVerySmallScreen) ...[
+                          SizedBox(
+                            height:
+                                isVerySmallScreen
+                                    ? 8
+                                    : (isSmallScreen ? 16 : 32),
+                          ),
 
-                        SlideTransition(
-                          position: _slideImageAnimation,
-                          child: Center(
-                            child: SizedBox(
-                              width: imageWidth,
-                              height: imageHeight,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12.0),
-                                child: Image.asset(
-                                  'assets/images/login.png',
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: imageWidth,
-                                      height: imageHeight,
-                                      decoration: BoxDecoration(
-                                        color: theme.primaryColorLight,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Icon(
-                                        Icons.image_not_supported,
-                                        size: 80,
-                                        color: theme.primaryColorDark,
-                                      ),
-                                    );
-                                  },
+                          // Imagem - reduzida quando teclado visível
+                          SlideTransition(
+                            position: _slideImageAnimation,
+                            child: Center(
+                              child: SizedBox(
+                                height: _getImageHeight(
+                                  isSmallScreen,
+                                  isVerySmallScreen,
+                                  isKeyboardVisible,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                  child: Image.asset(
+                                    'assets/images/login.png',
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: _getImageHeight(
+                                          isSmallScreen,
+                                          isVerySmallScreen,
+                                          isKeyboardVisible,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: theme.primaryColorLight,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          size:
+                                              _getImageHeight(
+                                                isSmallScreen,
+                                                isVerySmallScreen,
+                                                isKeyboardVisible,
+                                              ) *
+                                              0.3,
+                                          color: theme.primaryColorDark,
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
 
-                        const SizedBox(height: 20),
+                          SizedBox(height: isVerySmallScreen ? 8 : 16),
+                        ],
 
+                        // Título - sempre visível, mas menor quando teclado ativo
                         SlideTransition(
                           position: _slideTitleAnimation,
                           child: Text(
                             'Login',
                             style: theme.textTheme.displaySmall?.copyWith(
                               color: theme.primaryColor,
-                              fontSize: 38,
+                              fontSize: _getTitleFontSize(
+                                isSmallScreen,
+                                isVerySmallScreen,
+                                isKeyboardVisible,
+                              ),
                               fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
                           ),
                         ),
 
-                        SlideTransition(
-                          position: _slideSubtitleAnimation,
-                          child: Text(
-                            'Seja bem-vindo(a) de volta!',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: Colors.grey[800],
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                        // Subtítulo - oculto quando teclado ativo em telas pequenas
+                        if (!isKeyboardVisible || !isVerySmallScreen) ...[
+                          SlideTransition(
+                            position: _slideSubtitleAnimation,
+                            child: Text(
+                              'Seja bem-vindo(a) de volta!',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: Colors.grey[800],
+                                fontSize:
+                                    isVerySmallScreen
+                                        ? 12
+                                        : (isSmallScreen ? 14 : 16),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
                           ),
+                        ],
+
+                        SizedBox(
+                          height:
+                              isKeyboardVisible
+                                  ? 16
+                                  : (isVerySmallScreen ? 16 : 24),
                         ),
 
-                        const SizedBox(height: 30),
-
+                        // Formulário - sempre visível e acessível
                         SlideTransition(
                           position: _slideFormAnimation,
                           child: Form(
                             key: _formKey,
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
                               children: [
-                                Material(
-                                  elevation: 5,
-                                  borderRadius: BorderRadius.circular(30),
-                                  shadowColor: Colors.black.withOpacity(0.4),
-                                  color: Colors.white,
-                                  child: TextFormField(
-                                    key: _cpfFieldKey,
-                                    controller: _cpfController,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      MaskedInputFormatter('000.000.000-00'),
-                                    ],
-                                    style: theme.textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'Digite seu CPF',
-                                      hintStyle: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey[500],
-                                      ),
+                                // Campo CPF
+                                _buildTextField(
+                                  key: _cpfFieldKey,
+                                  controller: _cpfController,
+                                  hintText: 'Digite seu CPF',
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    MaskedInputFormatter('000.000.000-00'),
+                                  ],
+                                  validator: _validarCPF,
+                                  theme: theme,
+                                  isSmallScreen: isVerySmallScreen,
+                                ),
+
+                                SizedBox(height: isVerySmallScreen ? 12 : 16),
+
+                                // Campo Senha
+                                _buildTextField(
+                                  key: _senhaFieldKey,
+                                  controller: _senhaController,
+                                  hintText: 'Digite sua senha',
+                                  obscureText: !_mostrarSenha,
+                                  validator: _validarSenha,
+                                  theme: theme,
+                                  isSmallScreen: isVerySmallScreen,
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _mostrarSenha
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                      color: Colors.grey[700],
+                                      size: isVerySmallScreen ? 20 : 24,
                                     ),
-                                    validator: _validarCPF,
-                                    autovalidateMode:
-                                        AutovalidateMode.onUserInteraction,
+                                    onPressed: () {
+                                      setState(() {
+                                        _mostrarSenha = !_mostrarSenha;
+                                      });
+                                    },
                                   ),
                                 ),
-                                Builder(
-                                  builder: (context) {
-                                    final errorText =
-                                        _cpfFieldKey.currentState?.errorText;
-                                    if (errorText != null &&
-                                        errorText.isNotEmpty) {
-                                      return Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                            left: 8.0,
-                                            top: 4.0,
-                                          ),
-                                          child: Text(
-                                            errorText,
-                                            style: TextStyle(
-                                              color: Colors.red,
-                                              fontSize: 12,
-                                            ),
-                                            textAlign: TextAlign.left,
-                                          ),
-                                        ),
-                                      );
-                                    } else {
-                                      return SizedBox.shrink();
-                                    }
-                                  },
-                                ),
 
-                                const SizedBox(height: 20),
-
-                                Material(
-                                  elevation: 5,
-                                  borderRadius: BorderRadius.circular(30),
-                                  shadowColor: Colors.black.withOpacity(0.4),
-                                  color: Colors.white,
-                                  child: TextFormField(
-                                    key: _senhaFieldKey,
-                                    controller: _senhaController,
-                                    obscureText: !_mostrarSenha,
-                                    style: theme.textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'Digite sua senha',
-                                      hintStyle: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey[500],
-                                      ),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _mostrarSenha
-                                              ? Icons.visibility_off
-                                              : Icons.visibility,
-                                          color: Colors.grey[700],
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _mostrarSenha = !_mostrarSenha;
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    validator: _validarSenha,
-                                    autovalidateMode:
-                                        AutovalidateMode.onUserInteraction,
-                                  ),
-                                ),
-                                Builder(
-                                  builder: (context) {
-                                    final errorText =
-                                        _senhaFieldKey.currentState?.errorText;
-                                    if (errorText != null &&
-                                        errorText.isNotEmpty) {
-                                      return Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                            left: 8.0,
-                                            top: 4.0,
-                                          ),
-                                          child: Text(
-                                            errorText,
-                                            style: TextStyle(
-                                              color: Colors.red,
-                                              fontSize: 12,
-                                            ),
-                                            textAlign: TextAlign.left,
-                                          ),
-                                        ),
-                                      );
-                                    } else {
-                                      return SizedBox.shrink();
-                                    }
-                                  },
-                                ),
-
+                                // Esqueceu a senha - sempre visível
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: Padding(
@@ -392,13 +363,19 @@ class _LoginScreenState extends State<LoginScreen>
                                       },
                                       style: TextButton.styleFrom(
                                         foregroundColor: theme.primaryColor,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
                                       ),
                                       child: Text(
                                         'Esqueceu a senha?',
                                         style: theme.textTheme.titleSmall
                                             ?.copyWith(
                                               color: Colors.grey[800],
-                                              fontWeight: FontWeight.bold,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize:
+                                                  isVerySmallScreen ? 11 : 13,
                                             ),
                                       ),
                                     ),
@@ -409,12 +386,15 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
 
-                        const SizedBox(height: 16),
+                        // Espaço flexível para empurrar botão para baixo
+                        SizedBox(height: isKeyboardVisible ? 20 : 32),
 
+                        // Botão de login - sempre visível
                         FadeTransition(
                           opacity: _fadeInButtonAnimation,
                           child: SizedBox(
-                            height: 60,
+                            width: double.infinity,
+                            height: isVerySmallScreen ? 48 : 56,
                             child:
                                 _carregando
                                     ? Center(
@@ -431,14 +411,15 @@ class _LoginScreenState extends State<LoginScreen>
                                             >(
                                               RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(30.0),
+                                                    BorderRadius.circular(28.0),
                                               ),
                                             ),
                                             padding: WidgetStateProperty.all<
                                               EdgeInsets
                                             >(
-                                              const EdgeInsets.symmetric(
-                                                vertical: 16,
+                                              EdgeInsets.symmetric(
+                                                vertical:
+                                                    isVerySmallScreen ? 12 : 16,
                                               ),
                                             ),
                                           ),
@@ -446,7 +427,8 @@ class _LoginScreenState extends State<LoginScreen>
                                         'Entrar',
                                         style: theme.textTheme.labelLarge
                                             ?.copyWith(
-                                              fontSize: 20,
+                                              fontSize:
+                                                  isVerySmallScreen ? 16 : 18,
                                               fontWeight: FontWeight.bold,
                                             ),
                                       ),
@@ -454,8 +436,9 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
 
-                        const SizedBox(height: 30),
+                        SizedBox(height: 16),
 
+                        // Rodapé com cadastro - sempre visível
                         FadeTransition(
                           opacity: _fadeInButtonAnimation,
                           child: Row(
@@ -464,8 +447,9 @@ class _LoginScreenState extends State<LoginScreen>
                               Text(
                                 'Não tem uma conta?',
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[500],
-                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: isVerySmallScreen ? 12 : 14,
                                 ),
                               ),
                               TextButton(
@@ -484,15 +468,17 @@ class _LoginScreenState extends State<LoginScreen>
                                 child: Text(
                                   'Cadastre-se',
                                   style: theme.textTheme.titleSmall?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                    color: theme.colorScheme.primary,
                                     fontWeight: FontWeight.bold,
+                                    fontSize: isVerySmallScreen ? 12 : 14,
                                   ),
                                 ),
                               ),
                             ],
                           ),
                         ),
+
+                        SizedBox(height: isKeyboardVisible ? 16 : 24),
                       ],
                     ),
                   ),
@@ -503,6 +489,100 @@ class _LoginScreenState extends State<LoginScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildTextField({
+    required GlobalKey<FormFieldState> key,
+    required TextEditingController controller,
+    required String hintText,
+    required ThemeData theme,
+    required bool isSmallScreen,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Material(
+          elevation: 3,
+          borderRadius: BorderRadius.circular(28),
+          shadowColor: Colors.black.withOpacity(0.1),
+          color: Colors.white,
+          child: TextFormField(
+            key: key,
+            controller: controller,
+            keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
+            obscureText: obscureText,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontSize: isSmallScreen ? 14 : 16,
+            ),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[500],
+                fontSize: isSmallScreen ? 14 : 16,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: isSmallScreen ? 14 : 16,
+              ),
+              border: InputBorder.none,
+              suffixIcon: suffixIcon,
+            ),
+            validator: validator,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+          ),
+        ),
+        // Erro do campo
+        Builder(
+          builder: (context) {
+            final errorText = key.currentState?.errorText;
+            if (errorText != null && errorText.isNotEmpty) {
+              return Padding(
+                padding: const EdgeInsets.only(left: 12.0, top: 4.0),
+                child: Text(
+                  errorText,
+                  style: TextStyle(
+                    color: Colors.red[600],
+                    fontSize: isSmallScreen ? 11 : 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ],
+    );
+  }
+
+  double _getImageHeight(
+    bool isSmallScreen,
+    bool isVerySmallScreen,
+    bool isKeyboardVisible,
+  ) {
+    if (isKeyboardVisible && isVerySmallScreen) return 0;
+    if (isKeyboardVisible) return 120;
+    if (isVerySmallScreen) return 200;
+    if (isSmallScreen) return 280;
+    return 350;
+  }
+
+  double _getTitleFontSize(
+    bool isSmallScreen,
+    bool isVerySmallScreen,
+    bool isKeyboardVisible,
+  ) {
+    if (isKeyboardVisible && isVerySmallScreen) return 22;
+    if (isVerySmallScreen) return 28;
+    if (isSmallScreen) return 32;
+    return 38;
   }
 
   Future<void> _verificarETrocarParaTutorial() async {

@@ -183,7 +183,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           content: Text(
             'Você deve concordar com os Termos e Política de Privacidade',
           ),
-          duration: Duration(seconds: 1),
+          duration: Duration(seconds: 2),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -191,7 +191,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('As senhas devem ser iguais'),
-          duration: Duration(seconds: 1),
+          duration: Duration(seconds: 2),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -264,10 +264,19 @@ class _RegisterScreenState extends State<RegisterScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final screenWidth = mediaQuery.size.width;
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final isKeyboardVisible = keyboardHeight > 0;
+
+    // Detecta diferentes tipos de tela
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+    final isTablet = screenWidth > 600;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthErro) {
@@ -291,13 +300,24 @@ class _RegisterScreenState extends State<RegisterScreen>
             child: FadeTransition(
               opacity: _fadeInAnimation,
               child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 48.0 : 24.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(height: 20),
+                      // Espaço no topo
+                      SizedBox(
+                        height:
+                            isKeyboardVisible
+                                ? 8
+                                : (isVerySmallScreen ? 16 : 24),
+                      ),
 
+                      // Título - menor quando teclado ativo
                       SlideTransition(
                         position: _slideTitleAnimation,
                         child: Text(
@@ -305,63 +325,91 @@ class _RegisterScreenState extends State<RegisterScreen>
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.primaryColor,
-                            fontSize: 40,
+                            fontSize: _getTitleFontSize(
+                              isSmallScreen,
+                              isVerySmallScreen,
+                              isKeyboardVisible,
+                            ),
                           ),
                           textAlign: TextAlign.center,
                         ),
                       ),
 
-                      SlideTransition(
-                        position: _slideSubtitleAnimation,
-                        child: Text(
-                          'Ajude a melhorar sua cidade',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[800],
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                      // Subtítulo - oculto quando teclado ativo em telas pequenas
+                      if (!isKeyboardVisible || !isVerySmallScreen) ...[
+                        SlideTransition(
+                          position: _slideSubtitleAnimation,
+                          child: Text(
+                            'Ajude a melhorar sua cidade',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey[800],
+                              fontWeight: FontWeight.w600,
+                              fontSize:
+                                  isVerySmallScreen
+                                      ? 12
+                                      : (isSmallScreen ? 14 : 16),
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
                         ),
+                      ],
+
+                      SizedBox(
+                        height:
+                            isKeyboardVisible
+                                ? 12
+                                : (isVerySmallScreen ? 20 : 32),
                       ),
 
-                      const SizedBox(height: 42),
-
+                      // Formulário
                       Form(
                         key: _formKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            // Campo Nome
                             SlideTransition(
                               position: _slideForm1Animation,
                               child: _buildInputField(
                                 controller: _nomeController,
-                                label: 'Nome Completo',
-                                hint: "Digite seu nome",
+                                hint: "Digite seu nome completo",
                                 keyboardType: TextInputType.name,
                                 validator: _validarNome,
                                 fieldKey: _nomeFieldKey,
+                                isSmallScreen: isVerySmallScreen,
                               ),
                             ),
-                            const SizedBox(height: 30),
+                            SizedBox(
+                              height: _getFieldSpacing(
+                                isVerySmallScreen,
+                                isKeyboardVisible,
+                              ),
+                            ),
 
+                            // Campo Email
                             SlideTransition(
                               position: _slideForm2Animation,
                               child: _buildInputField(
                                 controller: _emailController,
-                                label: 'E-mail',
                                 hint: "Digite seu e-mail",
                                 keyboardType: TextInputType.emailAddress,
                                 validator: _validarEmail,
                                 fieldKey: _emailFieldKey,
+                                isSmallScreen: isVerySmallScreen,
                               ),
                             ),
-                            const SizedBox(height: 30),
+                            SizedBox(
+                              height: _getFieldSpacing(
+                                isVerySmallScreen,
+                                isKeyboardVisible,
+                              ),
+                            ),
 
+                            // Campo CPF
                             SlideTransition(
                               position: _slideForm3Animation,
                               child: _buildInputField(
                                 controller: _cpfController,
-                                label: 'CPF',
                                 hint: "Digite seu CPF",
                                 keyboardType: TextInputType.number,
                                 validator: _validarCPF,
@@ -369,15 +417,21 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   MaskedInputFormatter('000.000.000-00'),
                                 ],
                                 fieldKey: _cpfFieldKey,
+                                isSmallScreen: isVerySmallScreen,
                               ),
                             ),
-                            const SizedBox(height: 30),
+                            SizedBox(
+                              height: _getFieldSpacing(
+                                isVerySmallScreen,
+                                isKeyboardVisible,
+                              ),
+                            ),
 
+                            // Campo Senha
                             SlideTransition(
                               position: _slideForm4Animation,
                               child: _buildInputField(
                                 controller: _senhaController,
-                                label: 'Senha',
                                 hint: "Digite sua senha",
                                 obscureText: !_mostrarSenha,
                                 validator: _validarSenha,
@@ -387,6 +441,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                         ? Icons.visibility_off
                                         : Icons.visibility,
                                     color: Colors.grey[700],
+                                    size: isVerySmallScreen ? 20 : 24,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -395,15 +450,21 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   },
                                 ),
                                 fieldKey: _senhaFieldKey,
+                                isSmallScreen: isVerySmallScreen,
                               ),
                             ),
-                            const SizedBox(height: 30),
+                            SizedBox(
+                              height: _getFieldSpacing(
+                                isVerySmallScreen,
+                                isKeyboardVisible,
+                              ),
+                            ),
 
+                            // Campo Confirmar Senha
                             SlideTransition(
                               position: _slideForm5Animation,
                               child: _buildInputField(
                                 controller: _confirmaSenhaController,
-                                label: 'Confirmar Senha',
                                 hint: "Confirme sua senha",
                                 obscureText: !_mostrarConfirmaSenha,
                                 validator: _validarConfirmaSenha,
@@ -413,6 +474,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                         ? Icons.visibility_off
                                         : Icons.visibility,
                                     color: Colors.grey[700],
+                                    size: isVerySmallScreen ? 20 : 24,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -422,9 +484,18 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   },
                                 ),
                                 fieldKey: _confirmaSenhaFieldKey,
+                                isSmallScreen: isVerySmallScreen,
                               ),
                             ),
 
+                            SizedBox(
+                              height: _getFieldSpacing(
+                                isVerySmallScreen,
+                                isKeyboardVisible,
+                              ),
+                            ),
+
+                            // Termos e Política
                             FadeTransition(
                               opacity: _fadeInTermsAnimation,
                               child: TermsAndPolicyWidget(
@@ -434,94 +505,96 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     _concordaTermos = value ?? false;
                                   });
                                 },
-                              ),
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            FadeTransition(
-                              opacity: _fadeInButtonAnimation,
-                              child: SizedBox(
-                                height: 60,
-                                child:
-                                    _carregando
-                                        ? Center(
-                                          child: CircularProgressIndicator(
-                                            color: theme.primaryColor,
-                                          ),
-                                        )
-                                        : ElevatedButton(
-                                          onPressed: _registrar,
-                                          style: theme.elevatedButtonTheme.style
-                                              ?.copyWith(
-                                                shape: WidgetStateProperty.all<
-                                                  RoundedRectangleBorder
-                                                >(
-                                                  RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          30.0,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                          child: Text(
-                                            'Cadastrar',
-                                            style: theme.textTheme.labelLarge
-                                                ?.copyWith(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                        ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            FadeTransition(
-                              opacity: _fadeInButtonAnimation,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Já tem uma conta?',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: Colors.grey[500],
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: theme.primaryColor,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                      ),
-                                      minimumSize: const Size(50, 30),
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    child: Text(
-                                      'Entrar',
-                                      style: theme.textTheme.titleSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                          ),
-                                    ),
-                                  ),
-                                ],
+                                isSmallScreen: isSmallScreen,
+                                isVerySmallScreen: isVerySmallScreen,
                               ),
                             ),
                           ],
                         ),
                       ),
+
+                      SizedBox(height: isKeyboardVisible ? 16 : 24),
+
+                      // Botão de cadastrar
+                      FadeTransition(
+                        opacity: _fadeInButtonAnimation,
+                        child: SizedBox(
+                          height: isVerySmallScreen ? 48 : 56,
+                          child:
+                              _carregando
+                                  ? Center(
+                                    child: CircularProgressIndicator(
+                                      color: theme.primaryColor,
+                                    ),
+                                  )
+                                  : ElevatedButton(
+                                    onPressed: _registrar,
+                                    style: theme.elevatedButtonTheme.style
+                                        ?.copyWith(
+                                          shape: WidgetStateProperty.all<
+                                            RoundedRectangleBorder
+                                          >(
+                                            RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(28.0),
+                                            ),
+                                          ),
+                                        ),
+                                    child: Text(
+                                      'Cadastrar',
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(
+                                            fontSize:
+                                                isVerySmallScreen ? 16 : 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                  ),
+                        ),
+                      ),
+
+                      SizedBox(height: 16),
+
+                      // Rodapé com login
+                      FadeTransition(
+                        opacity: _fadeInButtonAnimation,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Já tem uma conta?',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                                fontSize: isVerySmallScreen ? 12 : 14,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: theme.primaryColor,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                minimumSize: const Size(50, 30),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                'Entrar',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                  fontSize: isVerySmallScreen ? 12 : 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: isKeyboardVisible ? 16 : 24),
                     ],
                   ),
                 ),
@@ -535,7 +608,6 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   Widget _buildInputField({
     required TextEditingController controller,
-    required String label,
     required String hint,
     bool obscureText = false,
     TextInputType? keyboardType,
@@ -543,15 +615,17 @@ class _RegisterScreenState extends State<RegisterScreen>
     String? Function(String?)? validator,
     List<TextInputFormatter>? inputFormatters,
     GlobalKey<FormFieldState>? fieldKey,
+    required bool isSmallScreen,
   }) {
     final theme = Theme.of(context);
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Material(
-          elevation: 5,
-          borderRadius: BorderRadius.circular(30),
-          shadowColor: Colors.black.withOpacity(0.4),
+          elevation: 3,
+          borderRadius: BorderRadius.circular(28),
+          shadowColor: Colors.black.withOpacity(0.1),
           color: Colors.white,
           child: TextFormField(
             key: fieldKey,
@@ -560,38 +634,65 @@ class _RegisterScreenState extends State<RegisterScreen>
             keyboardType: keyboardType,
             validator: validator,
             inputFormatters: inputFormatters,
-            style: theme.textTheme.bodyLarge,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontSize: isSmallScreen ? 14 : 16,
+            ),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
                 color: Colors.grey[500],
+                fontSize: isSmallScreen ? 14 : 16,
               ),
-              floatingLabelBehavior: FloatingLabelBehavior.never,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: isSmallScreen ? 14 : 16,
+              ),
+              border: InputBorder.none,
               suffixIcon: suffixIcon,
-              fillColor: Colors.white,
             ),
             autovalidateMode: AutovalidateMode.onUserInteraction,
           ),
         ),
+        // Erro do campo
         Builder(
           builder: (context) {
-            final erroText = fieldKey?.currentState?.errorText;
-            if (erroText != null && erroText.isNotEmpty) {
+            final errorText = fieldKey?.currentState?.errorText;
+            if (errorText != null && errorText.isNotEmpty) {
               return Padding(
                 padding: const EdgeInsets.only(left: 12.0, top: 4.0),
                 child: Text(
-                  erroText,
-                  style: TextStyle(color: Colors.red, fontSize: 12),
+                  errorText,
+                  style: TextStyle(
+                    color: Colors.red[600],
+                    fontSize: isSmallScreen ? 11 : 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               );
-            } else {
-              return SizedBox.shrink();
             }
+            return const SizedBox.shrink();
           },
         ),
       ],
     );
+  }
+
+  double _getTitleFontSize(
+    bool isSmallScreen,
+    bool isVerySmallScreen,
+    bool isKeyboardVisible,
+  ) {
+    if (isKeyboardVisible && isVerySmallScreen) return 24;
+    if (isVerySmallScreen) return 28;
+    if (isSmallScreen) return 32;
+    return 38;
+  }
+
+  double _getFieldSpacing(bool isVerySmallScreen, bool isKeyboardVisible) {
+    if (isKeyboardVisible && isVerySmallScreen) return 12;
+    if (isVerySmallScreen) return 16;
+    return 20;
   }
 
   Future<void> _verificarETrocarParaTutorial() async {
@@ -606,11 +707,15 @@ class _RegisterScreenState extends State<RegisterScreen>
 class TermsAndPolicyWidget extends StatelessWidget {
   final bool concordaTermos;
   final Function(bool?) onChanged;
+  final bool isSmallScreen;
+  final bool isVerySmallScreen;
 
   const TermsAndPolicyWidget({
     super.key,
     required this.concordaTermos,
     required this.onChanged,
+    required this.isSmallScreen,
+    required this.isVerySmallScreen,
   });
 
   @override
@@ -618,50 +723,63 @@ class TermsAndPolicyWidget extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Checkbox(
-          value: concordaTermos,
-          onChanged: onChanged,
-          activeColor: theme.primaryColor,
+        Transform.scale(
+          scale: isVerySmallScreen ? 0.8 : (isSmallScreen ? 0.9 : 1.0),
+          child: Checkbox(
+            value: concordaTermos,
+            onChanged: onChanged,
+            activeColor: theme.primaryColor,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
         ),
         Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey[500],
-                fontWeight: FontWeight.bold,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: RichText(
+              text: TextSpan(
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                  fontSize: isVerySmallScreen ? 11 : (isSmallScreen ? 12 : 13),
+                ),
+                children: [
+                  const TextSpan(text: 'Li e concordo com os '),
+                  TextSpan(
+                    text: 'Termos',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                      fontSize:
+                          isVerySmallScreen ? 11 : (isSmallScreen ? 12 : 13),
+                    ),
+                    recognizer:
+                        TapGestureRecognizer()
+                          ..onTap = () {
+                            _mostrarDialogoTermos(context, true);
+                          },
+                  ),
+                  const TextSpan(text: ' e '),
+                  TextSpan(
+                    text: 'Política de Privacidade',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                      fontSize:
+                          isVerySmallScreen ? 11 : (isSmallScreen ? 12 : 13),
+                    ),
+                    recognizer:
+                        TapGestureRecognizer()
+                          ..onTap = () {
+                            _mostrarDialogoTermos(context, false);
+                          },
+                  ),
+                  const TextSpan(text: '.'),
+                ],
               ),
-              children: [
-                const TextSpan(text: 'Li e concordo com os '),
-                TextSpan(
-                  text: 'Termos',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.underline,
-                  ),
-                  recognizer:
-                      TapGestureRecognizer()
-                        ..onTap = () {
-                          _mostrarDialogoTermos(context, true);
-                        },
-                ),
-                const TextSpan(text: ' e '),
-                TextSpan(
-                  text: 'Política de Privacidade',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.underline,
-                  ),
-                  recognizer:
-                      TapGestureRecognizer()
-                        ..onTap = () {
-                          _mostrarDialogoTermos(context, false);
-                        },
-                ),
-                const TextSpan(text: '.'),
-              ],
             ),
           ),
         ),

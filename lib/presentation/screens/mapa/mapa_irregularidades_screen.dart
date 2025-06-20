@@ -149,6 +149,7 @@ class _MapaIrregularidadesScreenState extends State<MapaIrregularidadesScreen> {
                 point: LatLng(registro.latitude, registro.longitude),
                 width: 40,
                 height: 40,
+                alignment: Alignment.bottomCenter,
                 child: GestureDetector(
                   onTap: () {
                     _mostrarInfoWindow(context, registro);

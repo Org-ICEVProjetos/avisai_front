@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:avisai4/presentation/screens/home/home_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -43,6 +44,11 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
   final TextEditingController _observationController = TextEditingController();
   late AnimationController _buttonAnimationController;
   late Animation<double> _buttonScaleAnimation;
+  double _zoomLevel = 1.0;
+  double _minZoomLevel = 1.0;
+  double _maxZoomLevel = 1.0;
+  bool _mostrarControlesZoom = false;
+  Timer? _timerOcultarControles;
 
   @override
   void initState() {
@@ -70,6 +76,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
   void dispose() {
     _buttonAnimationController.dispose();
     _observationController.dispose();
+    _timerOcultarControles?.cancel(); // ADICIONE esta linha
 
     try {
       if (_cameraController != null) {
@@ -169,6 +176,10 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
 
       await _cameraController!.initialize();
 
+      _minZoomLevel = await _cameraController!.getMinZoomLevel();
+      _maxZoomLevel = await _cameraController!.getMaxZoomLevel();
+      _zoomLevel = _minZoomLevel;
+
       if (!mounted) return;
 
       setState(() {
@@ -185,6 +196,39 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
           _erroCamera = true;
           _mensagemErro = 'Erro ao inicializar câmera';
         });
+      }
+    }
+  }
+
+  void _mostrarControlesZoomTemporariamente() {
+    setState(() {
+      _mostrarControlesZoom = true;
+    });
+
+    _timerOcultarControles?.cancel();
+    _timerOcultarControles = Timer(Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _mostrarControlesZoom = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _setZoomLevel(double zoom) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
+    try {
+      await _cameraController!.setZoomLevel(zoom);
+      setState(() {
+        _zoomLevel = zoom;
+      });
+      _mostrarControlesZoomTemporariamente();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Erro ao definir zoom: $e');
       }
     }
   }
@@ -505,7 +549,20 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
       return Stack(
         fit: StackFit.expand,
         children: [
-          CameraPreview(_cameraController!),
+          GestureDetector(
+            onScaleStart: (details) {
+              _mostrarControlesZoomTemporariamente();
+            },
+            onScaleUpdate: (details) {
+              double newZoom = _zoomLevel * details.scale;
+              newZoom = newZoom.clamp(_minZoomLevel, _maxZoomLevel);
+              _setZoomLevel(newZoom);
+            },
+            onTap: () {
+              _mostrarControlesZoomTemporariamente();
+            },
+            child: CameraPreview(_cameraController!),
+          ),
 
           Positioned(
             bottom: 32,
@@ -601,6 +658,77 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
               ),
             ),
           ),
+          // Controles de zoom
+          AnimatedPositioned(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            right: _mostrarControlesZoom ? 24 : -80,
+            top: 100,
+            bottom: 120,
+            child: AnimatedOpacity(
+              duration: Duration(milliseconds: 300),
+              opacity: _mostrarControlesZoom ? 1.0 : 0.0,
+              child: Container(
+                width: 60,
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.zoom_in, color: Colors.white, size: 24),
+                    SizedBox(height: 12),
+                    Expanded(
+                      child: RotatedBox(
+                        quarterTurns:
+                            3, // Rotaciona o slider para ficar vertical
+                        child: SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            activeTrackColor: Colors.white,
+                            inactiveTrackColor: Colors.white.withOpacity(0.3),
+                            thumbColor: Colors.white,
+                            overlayColor: Colors.white.withOpacity(0.2),
+                            trackHeight: 4,
+                            thumbShape: RoundSliderThumbShape(
+                              enabledThumbRadius: 10,
+                            ),
+                          ),
+                          child: Slider(
+                            value: _zoomLevel,
+                            min: _minZoomLevel,
+                            max: _maxZoomLevel,
+                            onChanged: (value) {
+                              _setZoomLevel(value);
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Icon(Icons.zoom_out, color: Colors.white, size: 24),
+                    SizedBox(height: 8),
+                    Text(
+                      '${_zoomLevel.toStringAsFixed(1)}x',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       );
     } catch (e) {
@@ -617,286 +745,301 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen>
     }
   }
 
-  Widget _visualizarImagemCapturada() {
-    return Stack(
-      children: [
-        Container(
-          color: Colors.black.withOpacity(0.7),
-          width: double.infinity,
-          height: double.infinity,
-        ),
+  // Substitua o método _visualizarImagemCapturada() por esta versão corrigida:
 
-        Center(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
+  Widget _visualizarImagemCapturada() {
+    return Scaffold(
+      // ADICIONE resizeToAvoidBottomInset para ajustar quando o teclado aparecer
+      resizeToAvoidBottomInset: true,
+      backgroundColor: Colors.black.withOpacity(0.7),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            // ENVOLVA o conteúdo em SingleChildScrollView
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom:
+                  MediaQuery.of(context).viewInsets.bottom +
+                  20, // ADICIONE padding bottom baseado no teclado
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(16),
-                      bottom: Radius.circular(16),
-                    ),
-                    child: Stack(
-                      children: [
-                        AspectRatio(
-                          aspectRatio: 16 / 12,
-                          child:
-                              _imagemCapturada != null
-                                  ? Image.file(
-                                    _imagemCapturada!,
-                                    fit: BoxFit.cover,
-                                  )
-                                  : Container(
-                                    color: Colors.grey[300],
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      size: 50,
-                                      color: Colors.grey[500],
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16),
+                        bottom: Radius.circular(16),
+                      ),
+                      child: Stack(
+                        children: [
+                          AspectRatio(
+                            aspectRatio: 16 / 12,
+                            child:
+                                _imagemCapturada != null
+                                    ? Image.file(
+                                      _imagemCapturada!,
+                                      fit: BoxFit.cover,
+                                    )
+                                    : Container(
+                                      color: Colors.grey[300],
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        size: 50,
+                                        color: Colors.grey[500],
+                                      ),
                                     ),
-                                  ),
-                        ),
-                        if (_imagemCapturada != null)
-                          Positioned(
-                            bottom: 8,
-                            right: 8,
-                            child: InkWell(
-                              onTap: () {
-                                showDialog(
-                                  context: context,
-                                  builder:
-                                      (_) => Dialog(
-                                        backgroundColor: Colors.transparent,
-                                        insetPadding: EdgeInsets.all(10),
-                                        child: GestureDetector(
-                                          onTap: () => Navigator.pop(context),
-                                          child: InteractiveViewer(
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              child: Image.file(
-                                                _imagemCapturada!,
-                                                fit: BoxFit.contain,
+                          ),
+                          if (_imagemCapturada != null)
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: InkWell(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder:
+                                        (_) => Dialog(
+                                          backgroundColor: Colors.transparent,
+                                          insetPadding: EdgeInsets.all(10),
+                                          child: GestureDetector(
+                                            onTap: () => Navigator.pop(context),
+                                            child: InteractiveViewer(
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                child: Image.file(
+                                                  _imagemCapturada!,
+                                                  fit: BoxFit.contain,
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                );
-                              },
-                              child: CircleAvatar(
-                                radius: 20,
-                                backgroundColor: Colors.black.withOpacity(0.6),
-                                child: Icon(
-                                  Icons.zoom_out_map,
-                                  color: Colors.white,
-                                  size: 20,
+                                  );
+                                },
+                                child: CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: Colors.black.withOpacity(
+                                    0.6,
+                                  ),
+                                  child: Icon(
+                                    Icons.zoom_out_map,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Material(
+                          elevation: 5,
+                          borderRadius: BorderRadius.circular(30),
+                          shadowColor: Colors.black.withOpacity(0.4),
+                          color: Colors.white,
+                          child: DropdownButtonFormField<
+                            CategoriaIrregularidade
+                          >(
+                            value: _categoriaIrregularidade,
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              suffixIcon: Icon(
+                                Icons.arrow_drop_down,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            hint: Text(
+                              'Selecione a categoria',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                            icon: const SizedBox.shrink(),
+                            items: [
+                              DropdownMenuItem(
+                                value: CategoriaIrregularidade.buraco,
+                                child: Text(
+                                  'Buraco na via',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: CategoriaIrregularidade.posteDefeituoso,
+                                child: Text(
+                                  'Poste com defeito',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: CategoriaIrregularidade.lixoIrregular,
+                                child: Text(
+                                  'Descarte irregular de lixo',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: CategoriaIrregularidade.outro,
+                                child: Text(
+                                  'Outros',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (valor) {
+                              if (valor != null) {
+                                setState(() {
+                                  _categoriaIrregularidade = valor;
+                                });
+                              }
+                            },
                           ),
+                        ),
+
+                        const SizedBox(height: 16),
+                        Material(
+                          elevation: 5,
+                          borderRadius: BorderRadius.circular(30),
+                          shadowColor: Colors.black.withOpacity(0.4),
+                          color: Colors.white,
+                          child: TextFormField(
+                            controller: _observationController,
+                            maxLines: 3,
+                            maxLength: 200,
+                            // ADICIONE scrollPadding para ajustar quando o campo receber foco
+                            scrollPadding: EdgeInsets.only(bottom: 40),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[700],
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Observações (opcional)',
+                              hintStyle: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[500],
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                              counterText: '',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      Material(
-                        elevation: 5,
-                        borderRadius: BorderRadius.circular(30),
-                        shadowColor: Colors.black.withOpacity(0.4),
-                        color: Colors.white,
-                        child: DropdownButtonFormField<CategoriaIrregularidade>(
-                          value: _categoriaIrregularidade,
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            suffixIcon: Icon(
-                              Icons.arrow_drop_down,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          hint: Text(
-                            'Selecione a categoria',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                          icon: const SizedBox.shrink(),
-                          items: [
-                            DropdownMenuItem(
-                              value: CategoriaIrregularidade.buraco,
-                              child: Text(
-                                'Buraco na via',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: CategoriaIrregularidade.posteDefeituoso,
-                              child: Text(
-                                'Poste com defeito',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: CategoriaIrregularidade.lixoIrregular,
-                              child: Text(
-                                'Descarte irregular de lixo',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: CategoriaIrregularidade.outro,
-                              child: Text(
-                                'Outros',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ),
-                          ],
-                          onChanged: (valor) {
-                            if (valor != null) {
-                              setState(() {
-                                _categoriaIrregularidade = valor;
-                              });
-                            }
-                          },
-                        ),
-                      ),
 
-                      const SizedBox(height: 16),
-                      Material(
-                        elevation: 5,
-                        borderRadius: BorderRadius.circular(30),
-                        shadowColor: Colors.black.withOpacity(0.4),
-                        color: Colors.white,
-                        child: TextFormField(
-                          controller: _observationController,
-                          maxLines: 3,
-                          maxLength: 200,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey[700],
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Observações (opcional)',
-                            hintStyle: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[500],
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 16,
-                            ),
-                            counterText: '',
-                          ),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Text(
+                        'Você tem certeza que deseja enviar?',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[850],
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Text(
-                      'Você tem certeza que deseja enviar?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[850],
                       ),
                     ),
                   ),
-                ),
 
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _cancelar,
-                          icon: Icon(Icons.close, size: 18),
-                          label: Text(
-                            'Cancelar',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            backgroundColor: Colors.white,
-                            side: BorderSide(color: Colors.red, width: 1.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _cancelar,
+                            icon: Icon(Icons.close, size: 18),
+                            label: Text(
+                              'Cancelar',
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            padding: EdgeInsets.symmetric(vertical: 12),
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              backgroundColor: Colors.white,
+                              side: BorderSide(color: Colors.red, width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: 12),
+                        SizedBox(width: 12),
 
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _enviarRegistro,
-                          icon: Icon(Icons.send, size: 18),
-                          label: Text(
-                            'Enviar',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _enviarRegistro,
+                            icon: Icon(Icons.send, size: 18),
+                            label: Text(
+                              'Enviar',
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            padding: EdgeInsets.symmetric(vertical: 12),
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.green,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

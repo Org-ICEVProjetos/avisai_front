@@ -188,7 +188,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   ) async {
     emit(RegistroCarregando());
     try {
-      await _registroRepository.criarRegistro(
+      final novoRegistro = await _registroRepository.criarRegistro(
         usuarioId: event.usuarioId,
         usuarioNome: event.usuarioNome,
         categoria: event.categoria,
@@ -198,8 +198,21 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
         observation: event.observation,
       );
 
+      // Verificar se o registro foi realmente salvo
+      bool registroSalvo = await _localStorage.registroExiste(novoRegistro.id!);
+
+      if (!registroSalvo) {
+        throw Exception('Falha ao salvar registro localmente');
+      }
+
       final registros = await _registroRepository.obterTodosRegistros();
-      emit(RegistroOperacaoSucesso(mensagem: 'Registro criado com sucesso!'));
+
+      String mensagem =
+          novoRegistro.sincronizado
+              ? 'Registro criado e sincronizado com sucesso!'
+              : 'Registro salvo localmente. Será sincronizado quando houver conexão.';
+
+      emit(RegistroOperacaoSucesso(mensagem: mensagem));
       emit(
         RegistroCarregado(
           registros: registros,
