@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -279,5 +280,28 @@ class LocalStorageService {
     } catch (e) {
       return {'erro': e.toString()};
     }
+  }
+
+  Future<List<LatLng>> getAllDocumentsLocations() async {
+    List<LatLng> locations = [];
+
+    try {
+      final db = await database;
+
+      final List<Map<String, dynamic>> documents = await db.query('registros');
+
+      for (Map<String, dynamic> doc in documents) {
+        double? latitude = doc['latitude'];
+        double? longitude = doc['longitude'];
+
+        if (latitude != null && longitude != null) {
+          locations.add(LatLng(latitude, longitude));
+        }
+      }
+    } catch (e) {
+      print('Erro ao obter localizações: $e');
+    }
+
+    return locations;
   }
 }

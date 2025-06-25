@@ -1,3 +1,4 @@
+import 'package:avisai4/services/local_storage_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart';
@@ -6,11 +7,14 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:latlong2/latlong.dart';
+
 class LocationService {
   static final LocationService _instance = LocationService._internal();
   factory LocationService() => _instance;
   LocationService._internal();
 
+  static LocalStorageService? localStorage = LocalStorageService();
   // Méotodo que pega a localização atual para mostrar no mapa
   Future<Position> getCurrentLocation() async {
     LocationPermission permission;
@@ -150,5 +154,35 @@ class LocationService {
     }
 
     throw Exception('Não foi possível obter o endereço');
+  }
+
+  Future<bool> isLocationNearSavedDocument(
+    double latitude,
+    double longitude,
+  ) async {
+    try {
+      List<LatLng> savedLocations =
+          await localStorage!.getAllDocumentsLocations();
+
+      for (LatLng savedLocation in savedLocations) {
+        double distance = Geolocator.distanceBetween(
+          latitude,
+          longitude,
+          savedLocation.latitude,
+          savedLocation.longitude,
+        );
+
+        if (distance <= 10.0) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Erro ao verificar localização próxima: $e');
+      }
+      return false;
+    }
   }
 }

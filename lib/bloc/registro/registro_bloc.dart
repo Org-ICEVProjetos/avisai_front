@@ -118,6 +118,7 @@ class RegistroErro extends RegistroState {
 
 class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   final RegistroRepository _registroRepository;
+  final LocationService _locationService;
   final ConnectivityService _connectivityService;
   StreamSubscription? _conectividadeSubscription;
   final LocalStorageService _localStorage;
@@ -129,6 +130,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
     required ConnectivityService connectivityService,
   }) : _registroRepository = registroRepository,
        _connectivityService = connectivityService,
+       _locationService = locationService,
        super(RegistroCarregando()) {
     on<CarregarRegistros>(_onCarregarRegistros);
     on<SincronizarRegistrosPendentes>(_onSincronizarRegistrosPendentes);
@@ -188,6 +190,15 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   ) async {
     emit(RegistroCarregando());
     try {
+      bool jaExiste = await _locationService.isLocationNearSavedDocument(
+        event.latitude,
+        event.longitude,
+      );
+
+      if (jaExiste) {
+        throw Exception('Esse registro já foi registrado');
+      }
+
       final novoRegistro = await _registroRepository.criarRegistro(
         usuarioId: event.usuarioId,
         usuarioNome: event.usuarioNome,
