@@ -26,33 +26,52 @@ class RegistroRepository {
        _connectivityService = ConnectivityService();
 
   // Sincroniza registros que não estão salvos no banco mas estão salvos localmente
+  // Melhorar o método _sincronizarRegistro
   Future<bool> _sincronizarRegistro(Registro registro) async {
     try {
+      // Verificar conectividade real antes de tentar
+      bool conectividadeReal = _connectivityService.isOnline;
+      if (!conectividadeReal) {
+        if (kDebugMode) {
+          print('Sem conectividade real para sincronizar ${registro.id}');
+        }
+        return false;
+      }
+
       String? endereco = registro.endereco;
       String? rua = registro.rua;
       String? bairro = registro.bairro;
       String? cidade = registro.cidade;
 
-      bool conectividadeReal = _connectivityService.isOnline;
-
-      if (!conectividadeReal) {
-        return false;
-      }
-
-      if ((endereco == null || endereco == 'Não disponível')) {
+      // Melhorar endereço apenas se estiver realmente "Não disponível"
+      if (endereco == null ||
+          endereco == 'Não disponível' ||
+          endereco.isEmpty) {
         try {
           final dadosEndereco = await _locationService
               .getAddressFromCoordinates(registro.latitude, registro.longitude)
-              .timeout(Duration(seconds: 10));
+              .timeout(Duration(seconds: 15));
 
           endereco = dadosEndereco['endereco'];
           rua = dadosEndereco['rua'];
           bairro = dadosEndereco['bairro'];
           cidade = dadosEndereco['cidade'];
+
+          if (kDebugMode) {
+            print('Endereço atualizado para ${registro.id}: $endereco');
+          }
         } catch (e) {
           if (kDebugMode) {
-            print('Erro ao obter endereço atualizado: $e');
+            print('Erro ao atualizar endereço para ${registro.id}: $e');
           }
+          // Não falhar a sincronização por causa do endereço
+          // Usar dados existentes ou coordenadas
+          endereco =
+              endereco ??
+              'Coordenadas: ${registro.latitude}, ${registro.longitude}';
+          rua = rua ?? 'Não identificada';
+          bairro = bairro ?? 'Não identificado';
+          cidade = cidade ?? 'Teresina';
         }
       }
 
@@ -63,6 +82,7 @@ class RegistroRepository {
         cidade: cidade,
       );
 
+      // Atualizar localmente se houve mudanças
       if (endereco != registro.endereco ||
           rua != registro.rua ||
           bairro != registro.bairro ||
@@ -70,15 +90,38 @@ class RegistroRepository {
         await _localStorage.updateRegistro(registroAtualizado);
       }
 
-      await _tentarEnviarComRetry(registroAtualizado, maxTentativas: 2);
+      // Tentar enviar com mais tentativas
+      await _tentarEnviarComRetry(registroAtualizado, maxTentativas: 3);
 
       await _localStorage.marcarRegistroComoSincronizado(registro.id!);
+
+      if (kDebugMode) {
+        print('Registro ${registro.id} sincronizado com sucesso');
+      }
+      if (kDebugMode) {
+        print('=== TENTATIVA DE SINCRONIZAÇÃO ===');
+        print('Registro ID: ${registro.id}');
+        print('Endereço: ${registro.endereco}');
+        print('Conectividade: $conectividadeReal');
+      }
+
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Erro na sincronização do registro a ${registro.id}: $e');
+        print('Erro na sincronização do registro ${registro.id}: $e');
       }
-      rethrow;
+
+      // Se for erro de validação do servidor (400), marcar como sincronizado
+      // para evitar tentativas infinitas
+      if (e is ApiException && e.statusCode == 400) {
+        if (kDebugMode) {
+          print('Erro de validação - removendo registro local: ${e.message}');
+        }
+        await _localStorage.deleteRegistro(registro.id!);
+        return true; // Considerar "resolvido" mesmo que tenha sido removido
+      }
+
+      return false;
     }
   }
 
@@ -230,6 +273,12 @@ class RegistroRepository {
       }
     }
 
+    if (kDebugMode) {
+      print('=== CRIANDO REGISTRO ===');
+      print('Conectividade: $conectividadeReal');
+      print('Endereço obtido: ${dadosEndereco['endereco']}');
+      print('Coordenadas: $latitudeAtual, $longitudeAtual');
+    }
     return novoRegistro;
   }
 

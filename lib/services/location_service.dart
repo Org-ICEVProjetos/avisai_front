@@ -45,16 +45,60 @@ class LocationService {
     );
   }
 
-  // Obtém dados do endereço a partir da localização
   Future<Map<String, String>> getAddressFromCoordinates(
     double latitude,
     double longitude,
   ) async {
+    Map<String, String> resultado = {
+      'endereco': 'Não disponível',
+      'rua': 'Não disponível',
+      'bairro': 'Não disponível',
+      'cidade': 'Não disponível',
+    };
+
+    // Tentar OpenStreetMap primeiro
     try {
-      return await _getAddressFromOpenStreetMap(latitude, longitude);
+      resultado = await _getAddressFromOpenStreetMap(
+        latitude,
+        longitude,
+      ).timeout(Duration(seconds: 10));
+
+      // Validar se obteve dados úteis
+      if (resultado['endereco'] != 'Não disponível' &&
+          resultado['endereco']!.isNotEmpty) {
+        return resultado;
+      }
     } catch (e) {
-      return await _getAddressFromGeocoding(latitude, longitude);
+      if (kDebugMode) {
+        print('OpenStreetMap falhou: $e');
+      }
     }
+
+    // Tentar Geocoding como fallback
+    try {
+      resultado = await _getAddressFromGeocoding(
+        latitude,
+        longitude,
+      ).timeout(Duration(seconds: 8));
+
+      // Validar se obteve dados úteis
+      if (resultado['endereco'] != 'Não disponível' &&
+          resultado['endereco']!.isNotEmpty) {
+        return resultado;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Geocoding falhou: $e');
+      }
+    }
+
+    // Se ambos falharam, retornar dados básicos baseados em coordenadas
+    return {
+      'endereco': 'Coordenadas: $latitude, $longitude',
+      'rua': 'Não identificada',
+      'bairro': 'Não identificado',
+      'cidade': 'Teresina', // assumir Teresina baseado nos dados
+    };
   }
 
   // Obtém endereço pela API do OpenStreetMap

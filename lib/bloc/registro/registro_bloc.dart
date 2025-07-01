@@ -196,7 +196,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
       );
 
       if (jaExiste) {
-        throw Exception('Esse registro já foi registrado');
+        throw Exception('Esse registro já foi criado');
       }
 
       final novoRegistro = await _registroRepository.criarRegistro(
@@ -236,6 +236,11 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
       }
 
       String mensagem = 'Erro ao criar registro: $e';
+
+      if (mensagem ==
+          "Erro ao criar registro: Exception: Esse registro já foi criado") {
+        mensagem = 'Esse registro já foi criado';
+      }
       if (e is ApiException && e.statusCode == 400) {
         mensagem = e.message;
       }
